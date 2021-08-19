@@ -248,11 +248,15 @@ PrefabInstance:
       objectReference: {fileID: 5023505030437753563, guid: 11c4f3f61d242a94f9debfd1065169ef, type: 3}
     - target: {fileID: 7276220160024155434, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
       propertyPath: _fieldSize
-      value: 7
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7276220160024155434, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
+      propertyPath: _winRowQuant
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7276220160024155434, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
       propertyPath: _markFieldSize
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7276220160024155435, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
       propertyPath: m_RootOrder

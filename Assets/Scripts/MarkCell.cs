@@ -22,6 +22,7 @@ public class MarkCell : MonoBehaviour
     [SerializeField] private Animator _markCellAnimator;
     // Mark type
     private MarkType _markType;
+
     /// <summary>
     /// Mark type
     /// </summary>

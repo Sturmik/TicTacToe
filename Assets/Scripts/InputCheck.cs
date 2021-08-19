@@ -8,7 +8,7 @@ public class InputCheck : MonoBehaviour
     void Update()
     {
         // Checking if player clicked on field
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) == true)
         {
             // Getting mouse position
             Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);

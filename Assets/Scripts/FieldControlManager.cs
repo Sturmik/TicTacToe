@@ -6,11 +6,13 @@ using UnityEngine;
 public static class Globals
 {
     #region Tags
+
     public const string MARK_CELL_TAG = "MarkCell";
+
     #endregion
 }
 
-// Class for field building
+// Class for field building and full control over it
 public class FieldControlManager : MonoBehaviour
 {
     #region Variables
@@ -38,6 +40,8 @@ public class FieldControlManager : MonoBehaviour
     [SerializeField] private GameObject _buildLine;
 
     [Header("Field characteristic")]
+    // Win row quantity
+    [SerializeField] private int _winRowQuant;
     // MarkField size
     [SerializeField] private float _markFieldSize;
     // Field size (number of cells _fieldSize x _fieldSize)
@@ -175,6 +179,105 @@ public class FieldControlManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Checks whole field for win condition
+    /// </summary>
+    /// <returns></returns>
+    private bool CheckFieldForWinCondition()
+    {
+        for (int i = 0; i < _gameObjectsMarkCells2DList.Count; i++)
+        {
+            for (int j = 0; j < _gameObjectsMarkCells2DList.Count; j++)
+            {
+                if (CheckPointForWinCondition(i, j, _marksTypes2DList[i][j]) == true)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Checks field for condition of winning
+    /// </summary>
+    /// <param name="x">Start X point</param>
+    /// <param name="y">Start Y point</param>
+    /// <param name="markType">Mark Type</param>
+    /// <param name="winCount">Count of matched marks in the row</param>
+    /// <param name="nextX">Next x to check for the match</param>
+    /// <param name="nextY">Next y to check for the match</param>
+    /// <param name="isReverse">For reverse check in recursion</param>
+    /// <returns></returns>
+    private bool CheckPointForWinCondition(int y, int x, MarkType markType,
+        int winCount = 1, int nextX = 0, int nextY = 0, bool isReverse = false)
+    {
+        // Check, if X and Y are correct
+        if (y < 0 || y >= _marksTypes2DList.Count
+            || x < 0 || x >= _marksTypes2DList.Count)
+        {
+            return false;
+        }
+        // If mark type is empty or is not equal to ours,
+        // there is nore reason to analyze this point further
+        if (markType == MarkType.Empty || _marksTypes2DList[y][x] != markType)
+        {
+            return false;
+        }
+        // Next, we analyze all surroundings of the point
+        // (If nextX and nextY equals zero, this point counts as starting one)
+        if (nextX == 0 && nextY == 0)
+        {
+            for (int yIt = y - 1; yIt <= y + 1; yIt++)
+            {
+                for (int xIt = x - 1; xIt <= x + 1; xIt++)
+                {
+                    // Ignore same point as ours
+                    if (xIt == x && yIt == y) { continue; }
+                    // Check, if we are in the boundaries
+                    if (yIt >= 0 && yIt < _marksTypes2DList.Count
+                        && xIt >= 0 && xIt < _marksTypes2DList.Count)
+                    {
+                        // Check next point for win condition
+                        if (CheckPointForWinCondition(yIt, xIt, markType, winCount + 1, xIt - x, yIt - y) == true)
+                        {
+                            Debug.Log("Win condition reached! From point [" + y + "][" + x + "] towards point"
+                                + "[" + yIt + "]" + "[" + xIt + "]");
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        // Else, we go to the destination (nextX and nextY)
+        else
+        {
+            // If, we reached our win row quantity - return true
+            if (winCount == _winRowQuant)
+            {
+                return true;
+            }
+            // Else, go further 
+            else
+            {
+                // Check forward and backwards for marks
+                bool forwardBackwardCheck;
+                // Check forward
+                forwardBackwardCheck = CheckPointForWinCondition(y + nextY, x + nextX, markType, winCount + 1, nextX, nextY, isReverse);
+                if (forwardBackwardCheck == false && isReverse == false)
+                {
+                    // Decrease win count, because we go backwards
+                    winCount = 1;
+                    // Check backwards
+                    forwardBackwardCheck = CheckPointForWinCondition(y - nextY, x - nextX, markType, winCount + 1, -nextX, -nextY, true);
+                }
+                // Return result
+                return forwardBackwardCheck;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Marks cell refered to the gameobject, with corresponding mark type
     /// </summary>
     /// <param name="markCell"></param>
@@ -206,12 +309,21 @@ public class FieldControlManager : MonoBehaviour
                     {
                         markCellScript.MarkType = TurnState;
                         _marksTypes2DList[i][j] = _turnState;
+                        if (CheckPointForWinCondition(i,j,TurnState) == true)
+                        {
+                            Debug.Log(TurnState.ToString() + " has won!");
+                        }
+                        break;
                     }
                     catch (Exception error)
                     {
                         Debug.LogError(error.Message);
                     }
                 }
+            }
+            if (markCellScript.MarkType == TurnState)
+            {
+                break;
             }
         }
         // Changing next turn mark
