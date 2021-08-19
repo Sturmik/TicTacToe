@@ -7,7 +7,7 @@ public class SpawnManager : MonoBehaviour
     // Pool types
     public enum PoolType
     {
-       MarkField,
+       MarkCell,
        BuildLine
     }
 
@@ -95,12 +95,9 @@ public class SpawnManager : MonoBehaviour
     {
         for (int i = 0; i < pool.Count; i++)
         {
-            if (obj.CompareTag(pool[i].tag))
+            if (pool[i].activeSelf == false)
             {
-                if (pool[i].activeSelf == false)
-                {
-                    return i;
-                }
+                return i;
             }
         }
         return -1;

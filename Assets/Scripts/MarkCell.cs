@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Mark field will represent cross or circle
-public class MarkField : MonoBehaviour
+// Mark cell will represent cross or circle
+public class MarkCell : MonoBehaviour
 {
     // Start is called before the first frame update
     void Start()
