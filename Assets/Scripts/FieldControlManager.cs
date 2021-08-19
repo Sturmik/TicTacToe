@@ -1,10 +1,32 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public static class Globals
+{
+    #region Tags
+    public const string MARK_CELL_TAG = "MarkCell";
+    #endregion
+}
+
 // Class for field building
 public class FieldControlManager : MonoBehaviour
 {
+    #region Variables
+
+    // Singleton
+    private static FieldControlManager _instance;
+    public static FieldControlManager GetInstance()
+    {
+        if (_instance == null)
+        {
+            Debug.LogWarning("Instance of " + nameof(FieldControlManager) + " is null referenced!");
+            throw new System.Exception("Instance of " + nameof(FieldControlManager) + " is null referenced!");
+        }
+        return _instance;
+    }
+
     // Constants
     private const int MIN_FIELD_SIZE = 3;
     private const int MAX_FIELD_SIZE = 30;
@@ -22,16 +44,43 @@ public class FieldControlManager : MonoBehaviour
     [Range(MIN_FIELD_SIZE, MAX_FIELD_SIZE)]
     [SerializeField] private int _fieldSize;
 
+    // List for lines
+    private List<GameObject> _linesList;
     // List for work with mark cells
-    private List<List<GameObject>> _markCells2DList;
+    private List<List<GameObject>> _gameObjectsMarkCells2DList;
+
+    // List, which holds state of cells
+    private List<List<MarkType>> _marksTypes2DList;
+
+    // Defines turn state
+    private MarkType _turnState;
+    /// <summary>
+    /// Returns mark, which must be placed now
+    /// </summary>
+    public  MarkType TurnState
+        { get { return _turnState; }}
+
+    #endregion
+
+    #region Unity
 
     // Start is called before the first frame update
     private void Start()
     {
-        // Initialize object
-        _markCells2DList = new List<List<GameObject>>();
+         // First turn is after cross
+        _turnState = MarkType.Cross;
+        // Singleton initialization
+        _instance = this;
+        // Initialize 
+        _linesList = new List<GameObject>();
+        _gameObjectsMarkCells2DList = new List<List<GameObject>>();
+        _marksTypes2DList = new List<List<MarkType>>();
         CreateField();
     }
+
+    #endregion
+
+    #region Methods
 
     /// <summary>
     /// Creates field for TicTacToe play 
@@ -73,30 +122,102 @@ public class FieldControlManager : MonoBehaviour
         for (int lineIt = 0; lineIt < _fieldSize - 1; lineIt++)
         {
             // Spawn line
-            GameObject xline = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
-            GameObject yline = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
+            GameObject spawnedXLine = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
+            GameObject spawnedYline = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
             // Scale object
-            xline.transform.localScale = new Vector3(adaptFieldSize / 4 / 3, adaptFieldSize * _fieldSize);
-            yline.transform.localScale = new Vector3(xline.transform.localScale.y, xline.transform.localScale.x);
+            spawnedXLine.transform.localScale = new Vector3(adaptFieldSize / 4 / 3, adaptFieldSize * _fieldSize);
+            spawnedYline.transform.localScale = new Vector3(spawnedXLine.transform.localScale.y, spawnedXLine.transform.localScale.x);
             // Setting position of the line
-            xline.transform.position = new Vector3(xLineStartPos + (lineIt * adaptFieldSize), yCenterPos);
-            yline.transform.position = new Vector3(xCenterPos, yLineStartPos - (lineIt * adaptFieldSize));
+            spawnedXLine.transform.position = new Vector3(xLineStartPos + (lineIt * adaptFieldSize), yCenterPos);
+            spawnedYline.transform.position = new Vector3(xCenterPos, yLineStartPos - (lineIt * adaptFieldSize));
+            // Add lines to the list
+            _linesList.Add(spawnedXLine);
+            _linesList.Add(spawnedYline);
         }
         // Create field, depending on the entered size
         for (int y = 0; y < _fieldSize; y++)
         {
-            _markCells2DList.Add(new List<GameObject>());
+            // Add new sub list 
+            _gameObjectsMarkCells2DList.Add(new List<GameObject>());
+            _marksTypes2DList.Add(new List<MarkType>());
             for (int x = 0; x < _fieldSize; x++)
             {
                 // Spawn mark cell
-                GameObject markCell = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.MarkCell, _markCell);
+                GameObject spawnedMarkCell = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.MarkCell, _markCell);
                 // Rescale object
-                markCell.transform.localScale = new Vector3(adaptFieldSize, adaptFieldSize);
+                spawnedMarkCell.transform.localScale = new Vector3(adaptFieldSize, adaptFieldSize);
                 // Set it on new position
-                markCell.transform.position = new Vector2(xStartPos + x * markCell.transform.localScale.x, yStartPos - y * markCell.transform.localScale.y);
+                spawnedMarkCell.transform.position = new Vector2(xStartPos + x * spawnedMarkCell.transform.localScale.x, yStartPos - y * spawnedMarkCell.transform.localScale.y);
                 // Add cell to list
-                _markCells2DList[y].Add(markCell);
+                _gameObjectsMarkCells2DList[y].Add(spawnedMarkCell);
+                // Add mark state
+                _marksTypes2DList[y].Add(MarkType.Empty);
             }
         }
     }
+
+    /// <summary>
+    /// Disables whole field
+    /// </summary>
+    private void DisableField()
+    {
+        for (int i = 0; i < _linesList.Count; i++)
+        {
+            _linesList[i].SetActive(false);
+        }
+        for (int i = 0; i < _gameObjectsMarkCells2DList.Count; i++)
+        {
+            for (int j = 0; j < _gameObjectsMarkCells2DList.Count; j++)
+            {
+                _gameObjectsMarkCells2DList[i][j].SetActive(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Marks cell refered to the gameobject, with corresponding mark type
+    /// </summary>
+    /// <param name="markCell"></param>
+    /// <param name="markType"></param>
+    public void MarkCellInField(GameObject markCell)
+    {
+        MarkCell markCellScript = null;
+        // Checking, if there is already some mark on this cell
+        try
+        {
+            markCellScript = markCell.GetComponent<MarkCell>();
+            if (markCellScript.MarkType != MarkType.Empty)
+            {
+                return;
+            }
+        }
+        catch (Exception error)
+        {
+            Debug.LogError(error.Message);
+        }
+        // Checking object
+        for (int i = 0; i < _gameObjectsMarkCells2DList.Count; i++)
+        {
+            for (int j = 0; j < _gameObjectsMarkCells2DList.Count; j++)
+            {
+                if (markCell.Equals(_gameObjectsMarkCells2DList[i][j]))
+                {
+                    try
+                    {
+                        markCellScript.MarkType = TurnState;
+                        _marksTypes2DList[i][j] = _turnState;
+                    }
+                    catch (Exception error)
+                    {
+                        Debug.LogError(error.Message);
+                    }
+                }
+            }
+        }
+        // Changing next turn mark
+        if (_turnState == MarkType.Cross) { _turnState = MarkType.Circle; }
+        else { _turnState = MarkType.Cross; }
+    }
+
+    #endregion
 }

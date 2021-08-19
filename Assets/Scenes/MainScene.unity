@@ -123,6 +123,23 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &40218719 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7276220160024155433, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
+  m_PrefabInstance: {fileID: 1778717161}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &40218722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 40218719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8117b1a1ffd54043b23ccfb4b0a3509, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -231,7 +248,7 @@ PrefabInstance:
       objectReference: {fileID: 5023505030437753563, guid: 11c4f3f61d242a94f9debfd1065169ef, type: 3}
     - target: {fileID: 7276220160024155434, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
       propertyPath: _fieldSize
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 7276220160024155434, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
       propertyPath: _markFieldSize

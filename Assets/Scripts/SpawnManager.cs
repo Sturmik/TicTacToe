@@ -19,8 +19,8 @@ public class SpawnManager : MonoBehaviour
     {
         if (_instance == null)
         {
-            Debug.LogWarning("Instance of spawn manager is null referenced!");
-            throw new System.Exception("Instance of spawn manager is null referenced!");
+            Debug.LogWarning("Instance of " + nameof(SpawnManager) + " is null referenced!");
+            throw new System.Exception("Instance of " + nameof(SpawnManager) + " is null referenced!");
         }
         return _instance;
     }
