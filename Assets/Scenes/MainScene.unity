@@ -237,7 +237,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _fieldControl: {fileID: 7276220160024155433, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
-  _winRowQuant: 5
+  _winRowQuant: 3
   _fieldSize: 3
   _markFieldSizeOnScreen: 2
   _inputUser: {fileID: 3952677897574468031, guid: 117ae658871cb8240b701823b388065c, type: 3}

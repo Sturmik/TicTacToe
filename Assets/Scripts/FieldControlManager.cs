@@ -6,6 +6,13 @@ using UnityEngine;
 // Class for field building and full control over it
 public class FieldControlManager : MonoBehaviour
 {
+    #region Events
+
+    // Event, which signals that field was marked
+    public event Action FieldIsMarked;
+
+    #endregion
+
     #region Variables
 
     [Header("Field default build blocks")]
@@ -16,6 +23,10 @@ public class FieldControlManager : MonoBehaviour
 
     // Win row quantity
     private int _winRowQuant;
+    /// <summary>
+    /// Return number of marks in a row required for win
+    /// </summary>
+    public int WinRowQuant { get { return _winRowQuant; } }
     // Field size (number of cells _fieldSize x _fieldSize)
     private int _fieldSize;
     // MarkField size
@@ -109,6 +120,8 @@ public class FieldControlManager : MonoBehaviour
         _firstInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState, this);
         _secondInputCheckGameObject = secondInputObject;
         _secondInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState == MarkType.Cross ? MarkType.Circle : MarkType.Cross, this);
+        // Invoke event
+        FieldIsMarked?.Invoke();
     }
 
     /// <summary>
@@ -194,6 +207,8 @@ public class FieldControlManager : MonoBehaviour
                 _marksTypes2DList[y].Add(MarkType.Empty);
             }
         }
+        // Invoke event
+        FieldIsMarked?.Invoke();
     }
 
     /// <summary>
@@ -202,14 +217,15 @@ public class FieldControlManager : MonoBehaviour
     public void DisableField()
     {
         // Clear all lists
-        if (_linesList != null &&
-            _gameObjectsMarksCells2DList != null &&
-            _marksTypes2DList != null)
+        if (_linesList == null ||
+            _gameObjectsMarksCells2DList == null ||
+            _marksTypes2DList == null)
         {
-            _linesList.Clear();
-            _gameObjectsMarksCells2DList.Clear();
-            _marksTypes2DList.Clear();
+            return;
         }
+        _linesList.Clear();
+        _gameObjectsMarksCells2DList.Clear();
+        _marksTypes2DList.Clear();
         // Disable all squares and lines
         for (int i = 0; i < _linesList.Count; i++)
         {
@@ -257,7 +273,7 @@ public class FieldControlManager : MonoBehaviour
     /// <param name="nextY">Next y to check for the match</param>
     /// <param name="isReverse">For reverse check in recursion</param>
     /// <returns>Does point create condition of winning</returns>
-    private bool CheckPointForWinCondition(int y, int x, MarkType markType, ref int maxMarkCount,
+    public bool CheckPointForWinCondition(int y, int x, MarkType markType, ref int maxMarkCount,
         int markCount = 1, int nextX = 0, int nextY = 0, bool isReverse = false)
     {
         // Check, if X and Y are correct
@@ -291,12 +307,8 @@ public class FieldControlManager : MonoBehaviour
                         // Check next point for win condition
                         if (CheckPointForWinCondition(yIt, xIt, markType,ref maxMarkCount, markCount + 1, xIt - x, yIt - y) == true)
                         {
-                            Debug.Log("Win condition reached! From point [" + y + "][" + x + "] towards point"
+                            Debug.Log("(Possible) Win condition from point [" + y + "][" + x + "] towards point"
                                 + "[" + yIt + "]" + "[" + xIt + "]" + " with " + maxMarkCount + " marks");
-                            // Win
-                            Debug.Log(TurnState.ToString() + " has won!");
-                            // Setting turn state to empty, which means no input will be accepted
-                            _turnState = MarkType.Empty;
                             return true;
                         }
                     }
@@ -385,12 +397,15 @@ public class FieldControlManager : MonoBehaviour
                         if (IsWinConditionReached == true)
                         {
                             // Win
+                            Debug.Log(TurnState.ToString() + " has won!");
                             return;
                         }
                         Debug.Log(TurnState.ToString() + " in a row: " + maxQuantityOfMarks);
                         // Changing next turn mark
                         if (_turnState == MarkType.Cross) { _turnState = MarkType.Circle; }
                         else { _turnState = MarkType.Cross; }
+                        // Calling event
+                        FieldIsMarked?.Invoke();
                         return;
                     }
                     catch (Exception error)

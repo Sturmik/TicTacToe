@@ -32,8 +32,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _markFieldSizeOnScreen;
 
     [Header("Inputs prefabs")]
-    // Input check prefabs
+    // Human input
     [SerializeField] private GameObject _inputUser;
+    // AI input
     [SerializeField] private GameObject _inputAI;
 
     // Start is called before the first frame update
@@ -41,14 +42,14 @@ public class GameManager : MonoBehaviour
     {
         _fieldControl = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.FieldControl, _fieldControl);
         FieldControlManager fieldControlScript = _fieldControl.GetComponent<FieldControlManager>();
-        fieldControlScript.CreateField(MarkType.Circle, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, -4);
-        fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
+        fieldControlScript.CreateField(MarkType.Cross, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, -4);
+        fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
             SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
 
         GameObject fieldControl2 = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.FieldControl, _fieldControl);
         FieldControlManager fieldControlScript2 = fieldControl2.GetComponent<FieldControlManager>();
         fieldControlScript2.CreateField(MarkType.Circle, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, 4);
-        fieldControlScript2.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
-            SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
+        fieldControlScript2.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
+            SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
     }
 }

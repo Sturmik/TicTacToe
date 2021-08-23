@@ -16,7 +16,7 @@ public class SpawnManager : MonoBehaviour
 
     #region Variables
 
-    //Singleton
+    // Singleton
     private static SpawnManager _instance;
     public static SpawnManager GetInstance()
     {
@@ -27,6 +27,7 @@ public class SpawnManager : MonoBehaviour
         }
         return _instance;
     }
+
     // Pools
     private List<List<GameObject>> _pools;
 

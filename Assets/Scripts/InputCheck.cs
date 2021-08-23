@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Abstrac class for input check by different entities
-public class InputCheck : MonoBehaviour
+public abstract class InputCheck : MonoBehaviour
 {
     // Mark type of the playe
     protected MarkType _userMarkType;
@@ -20,7 +20,7 @@ public class InputCheck : MonoBehaviour
         _fieldControl = null;
     }
 
-    public void SetInputToField(MarkType inputMarkType, FieldControlManager fieldControl)
+    public virtual void SetInputToField(MarkType inputMarkType, FieldControlManager fieldControl)
     {
         // Initialize variables
         _userMarkType = inputMarkType;
