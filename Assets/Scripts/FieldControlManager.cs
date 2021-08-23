@@ -92,7 +92,7 @@ public class FieldControlManager : MonoBehaviour
     /// <summary>
     /// Sets up inputs for this field
     /// </summary>
-    /// <param name="firstInputObject"></param>
+    /// <param name="firstInputObject">First input(will have the right to go first)</param>
     /// <param name="secondInputObject"></param>
     public void SetInputs(GameObject firstInputObject, GameObject secondInputObject)
     {
@@ -178,7 +178,7 @@ public class FieldControlManager : MonoBehaviour
             GameObject spawnedXLine = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
             GameObject spawnedYline = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
             // Scale object
-            spawnedXLine.transform.localScale = new Vector3(adaptFieldSize / 4 / 3, adaptFieldSize * _fieldSize);
+            spawnedXLine.transform.localScale = new Vector3(adaptFieldSize / 4 / 8, adaptFieldSize * _fieldSize);
             spawnedYline.transform.localScale = new Vector3(spawnedXLine.transform.localScale.y, spawnedXLine.transform.localScale.x);
             // Setting position of the line
             spawnedXLine.transform.position = new Vector3(xLineStartPos + (lineIt * adaptFieldSize), yCenterPos);
