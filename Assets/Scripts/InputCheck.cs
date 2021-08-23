@@ -2,25 +2,28 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Abstrac class for input check by different entities
 public class InputCheck : MonoBehaviour
 {
-    // Update is called once per frame
-    void Update()
+    // Mark type of the playe
+    protected MarkType _userMarkType;
+    // Field, where user must operate
+    protected FieldControlManager _fieldControl;
+    /// <summary>
+    /// Field control, to which this input check is attached
+    /// </summary>
+    public FieldControlManager FieldControl { get { return _fieldControl; } }
+
+    public void OnEnable()
     {
-        // Checking if player clicked on field
-        if (Input.GetMouseButtonDown(0) == true)
-        {
-            // Getting mouse position
-            Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Vector2 mousePos2D = new Vector2(mousePos.x, mousePos.y);
-            // Using raycast
-            RaycastHit2D hit = Physics2D.Raycast(mousePos2D, Vector2.zero);
-            // Checking for collision
-            if (hit.collider != null && hit.transform.CompareTag(Globals.MARK_CELL_TAG))
-            {
-                Debug.Log("This hit at " + hit.collider.transform.position);
-                FieldControlManager.GetInstance().MarkCellInField(hit.collider.gameObject);
-            }
-        }
+        _userMarkType = MarkType.Empty;
+        _fieldControl = null;
+    }
+
+    public void SetInputToField(MarkType inputMarkType, FieldControlManager fieldControl)
+    {
+        // Initialize variables
+        _userMarkType = inputMarkType;
+        _fieldControl = fieldControl;
     }
 }

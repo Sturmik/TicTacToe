@@ -3,58 +3,39 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class Globals
-{
-    #region Tags
-
-    public const string MARK_CELL_TAG = "MarkCell";
-
-    #endregion
-}
-
 // Class for field building and full control over it
 public class FieldControlManager : MonoBehaviour
 {
     #region Variables
 
-    // Singleton
-    private static FieldControlManager _instance;
-    public static FieldControlManager GetInstance()
-    {
-        if (_instance == null)
-        {
-            Debug.LogWarning("Instance of " + nameof(FieldControlManager) + " is null referenced!");
-            throw new System.Exception("Instance of " + nameof(FieldControlManager) + " is null referenced!");
-        }
-        return _instance;
-    }
-
-    // Constants
-    private const int MIN_FIELD_SIZE = 3;
-    private const int MAX_FIELD_SIZE = 30;
-
-    [Header("Field build blocks")]
+    [Header("Field default build blocks")]
     // Mark field prefab
     [SerializeField] private GameObject _markCell;
     // Building lines, which will form the field
     [SerializeField] private GameObject _buildLine;
 
-    [Header("Field characteristic")]
     // Win row quantity
-    [SerializeField] private int _winRowQuant;
-    // MarkField size
-    [SerializeField] private float _markFieldSize;
+    private int _winRowQuant;
     // Field size (number of cells _fieldSize x _fieldSize)
-    [Range(MIN_FIELD_SIZE, MAX_FIELD_SIZE)]
-    [SerializeField] private int _fieldSize;
+    private int _fieldSize;
+    // MarkField size
+    private float _markFieldSizeOnScreen;
 
     // List for lines
     private List<GameObject> _linesList;
     // List for work with mark cells
-    private List<List<GameObject>> _gameObjectsMarkCells2DList;
+    private List<List<GameObject>> _gameObjectsMarksCells2DList;
+    /// <summary>
+    /// List of mark fields in the field
+    /// </summary>
+    public List<List<GameObject>> GameObjectsMarksCells2DList { get { return _gameObjectsMarksCells2DList; } }
 
     // List, which holds state of cells
     private List<List<MarkType>> _marksTypes2DList;
+    /// <summary>
+    /// List of mark types in the field
+    /// </summary>
+    public List<List<MarkType>> MarksTypes2DList { get { return _marksTypes2DList; } }
 
     // Defines turn state
     private MarkType _turnState;
@@ -64,22 +45,33 @@ public class FieldControlManager : MonoBehaviour
     public  MarkType TurnState
         { get { return _turnState; }}
 
+    /// <summary>
+    /// Is win condition reached (if it is true, you can see who has won by getting TurnState property)
+    /// </summary>
+    public bool IsWinConditionReached { get; set; }
+
+    // Input check for the field and the game objects, which they are attached to 
+    private GameObject _firstInputCheckGameObject;
+    private GameObject _secondInputCheckGameObject;
+
     #endregion
 
     #region Unity
 
-    // Start is called before the first frame update
-    private void Start()
+    private void Awake()
     {
-         // First turn is after cross
-        _turnState = MarkType.Cross;
-        // Singleton initialization
-        _instance = this;
-        // Initialize 
+        // Initialize lists
         _linesList = new List<GameObject>();
-        _gameObjectsMarkCells2DList = new List<List<GameObject>>();
+        _gameObjectsMarksCells2DList = new List<List<GameObject>>();
         _marksTypes2DList = new List<List<MarkType>>();
-        CreateField();
+    }
+
+    private void OnDisable()
+    {
+        DisableField();
+        // Disable inputs
+        _firstInputCheckGameObject.SetActive(false);
+        _secondInputCheckGameObject.SetActive(false);
     }
 
     #endregion
@@ -87,20 +79,64 @@ public class FieldControlManager : MonoBehaviour
     #region Methods
 
     /// <summary>
+    /// Sets up inputs for this field
+    /// </summary>
+    /// <param name="firstInputObject"></param>
+    /// <param name="secondInputObject"></param>
+    public void SetInputs(GameObject firstInputObject, GameObject secondInputObject)
+    {
+        // Check if objects are null referenced
+        if (firstInputObject == null || secondInputObject == null)
+        {
+            Debug.LogWarning("Objects passed to the input of the field are null referenced!");
+            return;
+        }
+        // Check gameobjects
+        if (firstInputObject.GetComponent<InputCheck>() == null
+            || secondInputObject.GetComponent<InputCheck>() == null)
+        {
+            Debug.LogWarning("Objects, which were passed to the input of the field do not have InputCheck inherited script!");
+            return;
+        }
+        // Deactivate previous inputs, if there are ones
+        if(_firstInputCheckGameObject != null || _secondInputCheckGameObject != null)
+        {
+            _firstInputCheckGameObject.SetActive(false);
+            _secondInputCheckGameObject.SetActive(false);
+        }
+        // Attach new inputs and set their marks
+        _firstInputCheckGameObject = firstInputObject;
+        _firstInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState, this);
+        _secondInputCheckGameObject = secondInputObject;
+        _secondInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState == MarkType.Cross ? MarkType.Circle : MarkType.Cross, this);
+    }
+
+    /// <summary>
     /// Creates field for TicTacToe play 
     /// </summary>
     /// <param name="xStartPos">X center position</param>
     /// <param name="yStartPos">Y center position</param>
-    private void CreateField(float xCenterPos = 0, float yCenterPos = 0)
+    public void CreateField(MarkType firstTurn = MarkType.Cross, int winRowQuant = 3, int fieldSize = 3,
+        float markFieldSizeOnScreen = 2, float xCenterPos = 0, float yCenterPos = 0)
     {
+        // Disable field before creating new one
+        DisableField();
+        // Setting field parameters
+        if (fieldSize < Globals.MIN_FIELD_SIZE) { fieldSize = Globals.MIN_FIELD_SIZE; }
+        if (fieldSize > Globals.MAX_FIELD_SIZE) { fieldSize = Globals.MAX_FIELD_SIZE; }
+        if (winRowQuant > fieldSize){winRowQuant = fieldSize; }
+        _turnState = firstTurn;
+        _winRowQuant = winRowQuant;
+        _markFieldSizeOnScreen = markFieldSizeOnScreen;
+        _fieldSize = fieldSize;
         // Variables for line draw (will be used later in the function)
         float xLineStartPos = xCenterPos;
         float yLineStartPos = yCenterPos;
         int lineOffset = 0;
         // Set mark field scale, depending on field size.
         // Larger the field size, the smaller mark field is.
-        float adaptFieldSize = _markFieldSize / ((_markFieldSize * _fieldSize) / MIN_FIELD_SIZE);
-        adaptFieldSize = _markFieldSize * adaptFieldSize;
+        float adaptFieldSize = _markFieldSizeOnScreen / ((_markFieldSizeOnScreen * _fieldSize) / Globals.MIN_FIELD_SIZE);
+        adaptFieldSize = _markFieldSizeOnScreen * adaptFieldSize;
         // Getting start position for the field
         float xStartPos = xCenterPos - ((_fieldSize / 2) * adaptFieldSize);
         // Set y start position as inverted x start position
@@ -142,7 +178,7 @@ public class FieldControlManager : MonoBehaviour
         for (int y = 0; y < _fieldSize; y++)
         {
             // Add new sub list 
-            _gameObjectsMarkCells2DList.Add(new List<GameObject>());
+            _gameObjectsMarksCells2DList.Add(new List<GameObject>());
             _marksTypes2DList.Add(new List<MarkType>());
             for (int x = 0; x < _fieldSize; x++)
             {
@@ -153,7 +189,7 @@ public class FieldControlManager : MonoBehaviour
                 // Set it on new position
                 spawnedMarkCell.transform.position = new Vector2(xStartPos + x * spawnedMarkCell.transform.localScale.x, yStartPos - y * spawnedMarkCell.transform.localScale.y);
                 // Add cell to list
-                _gameObjectsMarkCells2DList[y].Add(spawnedMarkCell);
+                _gameObjectsMarksCells2DList[y].Add(spawnedMarkCell);
                 // Add mark state
                 _marksTypes2DList[y].Add(MarkType.Empty);
             }
@@ -163,17 +199,27 @@ public class FieldControlManager : MonoBehaviour
     /// <summary>
     /// Disables whole field
     /// </summary>
-    private void DisableField()
+    public void DisableField()
     {
+        // Clear all lists
+        if (_linesList != null &&
+            _gameObjectsMarksCells2DList != null &&
+            _marksTypes2DList != null)
+        {
+            _linesList.Clear();
+            _gameObjectsMarksCells2DList.Clear();
+            _marksTypes2DList.Clear();
+        }
+        // Disable all squares and lines
         for (int i = 0; i < _linesList.Count; i++)
         {
             _linesList[i].SetActive(false);
         }
-        for (int i = 0; i < _gameObjectsMarkCells2DList.Count; i++)
+        for (int i = 0; i < _gameObjectsMarksCells2DList.Count; i++)
         {
-            for (int j = 0; j < _gameObjectsMarkCells2DList.Count; j++)
+            for (int j = 0; j < _gameObjectsMarksCells2DList.Count; j++)
             {
-                _gameObjectsMarkCells2DList[i][j].SetActive(false);
+                _gameObjectsMarksCells2DList[i][j].SetActive(false);
             }
         }
     }
@@ -184,11 +230,13 @@ public class FieldControlManager : MonoBehaviour
     /// <returns></returns>
     private bool CheckFieldForWinCondition()
     {
-        for (int i = 0; i < _gameObjectsMarkCells2DList.Count; i++)
+        // Variable for storing max amount of marks, which go through this point
+        int maxQuantityOfMarks = 0;
+        for (int i = 0; i < _gameObjectsMarksCells2DList.Count; i++)
         {
-            for (int j = 0; j < _gameObjectsMarkCells2DList.Count; j++)
+            for (int j = 0; j < _gameObjectsMarksCells2DList.Count; j++)
             {
-                if (CheckPointForWinCondition(i, j, _marksTypes2DList[i][j]) == true)
+                if (CheckPointForWinCondition(i, j, _marksTypes2DList[i][j], ref maxQuantityOfMarks) == true)
                 {
                     return true;
                 }
@@ -203,13 +251,14 @@ public class FieldControlManager : MonoBehaviour
     /// <param name="x">Start X point</param>
     /// <param name="y">Start Y point</param>
     /// <param name="markType">Mark Type</param>
-    /// <param name="winCount">Count of matched marks in the row</param>
+    /// <param name="maxMarkCount">Optional variable for storing max quantity of specific type of marks in a row</param>
+    /// <param name="markCount">Count of matched marks in the row</param>
     /// <param name="nextX">Next x to check for the match</param>
     /// <param name="nextY">Next y to check for the match</param>
     /// <param name="isReverse">For reverse check in recursion</param>
-    /// <returns></returns>
-    private bool CheckPointForWinCondition(int y, int x, MarkType markType,
-        int winCount = 1, int nextX = 0, int nextY = 0, bool isReverse = false)
+    /// <returns>Does point create condition of winning</returns>
+    private bool CheckPointForWinCondition(int y, int x, MarkType markType, ref int maxMarkCount,
+        int markCount = 1, int nextX = 0, int nextY = 0, bool isReverse = false)
     {
         // Check, if X and Y are correct
         if (y < 0 || y >= _marksTypes2DList.Count
@@ -227,6 +276,8 @@ public class FieldControlManager : MonoBehaviour
         // (If nextX and nextY equals zero, this point counts as starting one)
         if (nextX == 0 && nextY == 0)
         {
+            // Variable for storing max amount of marks, which go through this point
+            maxMarkCount = 1;
             for (int yIt = y - 1; yIt <= y + 1; yIt++)
             {
                 for (int xIt = x - 1; xIt <= x + 1; xIt++)
@@ -238,10 +289,14 @@ public class FieldControlManager : MonoBehaviour
                         && xIt >= 0 && xIt < _marksTypes2DList.Count)
                     {
                         // Check next point for win condition
-                        if (CheckPointForWinCondition(yIt, xIt, markType, winCount + 1, xIt - x, yIt - y) == true)
+                        if (CheckPointForWinCondition(yIt, xIt, markType,ref maxMarkCount, markCount + 1, xIt - x, yIt - y) == true)
                         {
                             Debug.Log("Win condition reached! From point [" + y + "][" + x + "] towards point"
-                                + "[" + yIt + "]" + "[" + xIt + "]");
+                                + "[" + yIt + "]" + "[" + xIt + "]" + " with " + maxMarkCount + " marks");
+                            // Win
+                            Debug.Log(TurnState.ToString() + " has won!");
+                            // Setting turn state to empty, which means no input will be accepted
+                            _turnState = MarkType.Empty;
                             return true;
                         }
                     }
@@ -251,8 +306,12 @@ public class FieldControlManager : MonoBehaviour
         // Else, we go to the destination (nextX and nextY)
         else
         {
+            if (markCount >= maxMarkCount)
+            {
+                maxMarkCount = markCount;
+            }
             // If, we reached our win row quantity - return true
-            if (winCount == _winRowQuant)
+            if (markCount == _winRowQuant)
             {
                 return true;
             }
@@ -262,13 +321,13 @@ public class FieldControlManager : MonoBehaviour
                 // Check forward and backwards for marks
                 bool forwardBackwardCheck;
                 // Check forward
-                forwardBackwardCheck = CheckPointForWinCondition(y + nextY, x + nextX, markType, winCount + 1, nextX, nextY, isReverse);
+                forwardBackwardCheck = CheckPointForWinCondition(y + nextY, x + nextX, markType, ref maxMarkCount, markCount + 1, nextX, nextY, isReverse);
                 if (forwardBackwardCheck == false && isReverse == false)
                 {
                     // Decrease win count, because we go backwards
-                    winCount = 1;
+                    markCount = 1;
                     // Check backwards
-                    forwardBackwardCheck = CheckPointForWinCondition(y - nextY, x - nextX, markType, winCount + 1, -nextX, -nextY, true);
+                    forwardBackwardCheck = CheckPointForWinCondition(y - nextY, x - nextX, markType, ref maxMarkCount, markCount + 1, -nextX, -nextY, true);
                 }
                 // Return result
                 return forwardBackwardCheck;
@@ -280,10 +339,19 @@ public class FieldControlManager : MonoBehaviour
     /// <summary>
     /// Marks cell refered to the gameobject, with corresponding mark type
     /// </summary>
-    /// <param name="markCell"></param>
-    /// <param name="markType"></param>
+    /// <param name="markCell">Which cell to mark</param>
+    /// <param name="inputObject">Who asked to mark the cell</param>
     public void MarkCellInField(GameObject markCell)
     {
+        // Check, if win condition is reached
+        if (IsWinConditionReached == true)
+        {
+            Debug.Log("You can't mark this field anymore. Win condition has been reached");
+            // We don't allow anyone to mark field anymore,
+            // because someone has already win
+            return;
+        }
+        // We will need mark cell script to check, if it is possible to mark a field
         MarkCell markCellScript = null;
         // Checking, if there is already some mark on this cell
         try
@@ -298,22 +366,32 @@ public class FieldControlManager : MonoBehaviour
         {
             Debug.LogError(error.Message);
         }
-        // Checking object
-        for (int i = 0; i < _gameObjectsMarkCells2DList.Count; i++)
+        // Variable for storing max amount of marks, which go through this point
+        int maxQuantityOfMarks = 1;
+        // Looking for passed gameobject in list
+        for (int i = 0; i < _gameObjectsMarksCells2DList.Count; i++)
         {
-            for (int j = 0; j < _gameObjectsMarkCells2DList.Count; j++)
+            for (int j = 0; j < _gameObjectsMarksCells2DList.Count; j++)
             {
-                if (markCell.Equals(_gameObjectsMarkCells2DList[i][j]))
+                if (markCell.Equals(_gameObjectsMarksCells2DList[i][j]))
                 {
                     try
                     {
+                        // Changing mark type of the cell according to turn state
                         markCellScript.MarkType = TurnState;
                         _marksTypes2DList[i][j] = _turnState;
-                        if (CheckPointForWinCondition(i,j,TurnState) == true)
+                        // Checking win condition
+                        IsWinConditionReached = CheckPointForWinCondition(i, j, TurnState, ref maxQuantityOfMarks);
+                        if (IsWinConditionReached == true)
                         {
-                            Debug.Log(TurnState.ToString() + " has won!");
+                            // Win
+                            return;
                         }
-                        break;
+                        Debug.Log(TurnState.ToString() + " in a row: " + maxQuantityOfMarks);
+                        // Changing next turn mark
+                        if (_turnState == MarkType.Cross) { _turnState = MarkType.Circle; }
+                        else { _turnState = MarkType.Cross; }
+                        return;
                     }
                     catch (Exception error)
                     {
@@ -321,14 +399,7 @@ public class FieldControlManager : MonoBehaviour
                     }
                 }
             }
-            if (markCellScript.MarkType == TurnState)
-            {
-                break;
-            }
         }
-        // Changing next turn mark
-        if (_turnState == MarkType.Cross) { _turnState = MarkType.Circle; }
-        else { _turnState = MarkType.Cross; }
     }
 
     #endregion

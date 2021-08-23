@@ -8,7 +8,10 @@ public class SpawnManager : MonoBehaviour
     public enum PoolType
     {
        MarkCell,
-       BuildLine
+       BuildLine,
+       FieldControl,
+       InputUser,
+       InputAI
     }
 
     #region Variables
@@ -32,7 +35,7 @@ public class SpawnManager : MonoBehaviour
     #region Unity
 
     // Start is called before the first frame update
-    private void Start()
+    private void Awake()
     {
         // Set instance to this
         _instance = this;
