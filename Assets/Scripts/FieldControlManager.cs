@@ -310,9 +310,12 @@ public class FieldControlManager : MonoBehaviour
                         if (CheckPointForWinCondition(yIt, xIt, markType,ref maxMarkCount, toMarkWinRow, markCount + 1, xIt - x, yIt - y) == true)
                         {
                             // Mark cell as winning one via script 
-                            MarkCell markCellScript = _gameObjectsMarksCells2DList[y][x].GetComponent<MarkCell>();
-                            if (markCellScript.MarkType == MarkType.Cross) { markCellScript.MarkType = MarkType.CrossWin; }
-                            if (markCellScript.MarkType == MarkType.Circle) { markCellScript.MarkType = MarkType.CircleWin; }
+                            if (toMarkWinRow == true)
+                            {
+                                MarkCell markCellScript = _gameObjectsMarksCells2DList[y][x].GetComponent<MarkCell>();
+                                if (markCellScript.MarkType == MarkType.Cross) { markCellScript.MarkType = MarkType.CrossWin; }
+                                if (markCellScript.MarkType == MarkType.Circle) { markCellScript.MarkType = MarkType.CircleWin; }
+                            }
                             Debug.Log("(Possible) Win condition from point [" + y + "][" + x + "] towards point"
                                 + "[" + yIt + "]" + "[" + xIt + "]" + " with " + maxMarkCount + " marks");
                             return true;
