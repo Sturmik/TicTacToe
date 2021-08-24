@@ -42,14 +42,18 @@ public class GameManager : MonoBehaviour
     {
         _fieldControl = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.FieldControl, _fieldControl);
         FieldControlManager fieldControlScript = _fieldControl.GetComponent<FieldControlManager>();
-        fieldControlScript.CreateField(MarkType.Cross, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, -4);
+        fieldControlScript.CreateField(MarkType.Circle, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, -4);
         fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
-            SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
+            SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
 
         GameObject fieldControl2 = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.FieldControl, _fieldControl);
         FieldControlManager fieldControlScript2 = fieldControl2.GetComponent<FieldControlManager>();
-        fieldControlScript2.CreateField(MarkType.Circle, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, 4);
+        fieldControlScript2.CreateField(MarkType.Circle, _winRowQuant * 2, _fieldSize * 2, _markFieldSizeOnScreen, 4);
         fieldControlScript2.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
             SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
+        fieldControlScript2.DisableField();
+        fieldControlScript2.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
+            SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
+        fieldControlScript2.CreateField(MarkType.Cross, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, 4);
     }
 }

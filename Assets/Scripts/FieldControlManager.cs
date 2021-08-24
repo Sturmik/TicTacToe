@@ -223,9 +223,6 @@ public class FieldControlManager : MonoBehaviour
         {
             return;
         }
-        _linesList.Clear();
-        _gameObjectsMarksCells2DList.Clear();
-        _marksTypes2DList.Clear();
         // Disable all squares and lines
         for (int i = 0; i < _linesList.Count; i++)
         {
@@ -238,6 +235,10 @@ public class FieldControlManager : MonoBehaviour
                 _gameObjectsMarksCells2DList[i][j].SetActive(false);
             }
         }
+        // Clear lists
+        _linesList.Clear();
+        _gameObjectsMarksCells2DList.Clear();
+        _marksTypes2DList.Clear();
     }
 
     /// <summary>
@@ -268,12 +269,13 @@ public class FieldControlManager : MonoBehaviour
     /// <param name="y">Start Y point</param>
     /// <param name="markType">Mark Type</param>
     /// <param name="maxMarkCount">Optional variable for storing max quantity of specific type of marks in a row</param>
+    /// <param name="toMarkWinRow">Optional variable to ask, if we want to mark win row</param>
     /// <param name="markCount">Count of matched marks in the row</param>
     /// <param name="nextX">Next x to check for the match</param>
     /// <param name="nextY">Next y to check for the match</param>
     /// <param name="isReverse">For reverse check in recursion</param>
     /// <returns>Does point create condition of winning</returns>
-    public bool CheckPointForWinCondition(int y, int x, MarkType markType, ref int maxMarkCount,
+    public bool CheckPointForWinCondition(int y, int x, MarkType markType, ref int maxMarkCount, bool toMarkWinRow = false,
         int markCount = 1, int nextX = 0, int nextY = 0, bool isReverse = false)
     {
         // Check, if X and Y are correct
@@ -305,8 +307,12 @@ public class FieldControlManager : MonoBehaviour
                         && xIt >= 0 && xIt < _marksTypes2DList.Count)
                     {
                         // Check next point for win condition
-                        if (CheckPointForWinCondition(yIt, xIt, markType,ref maxMarkCount, markCount + 1, xIt - x, yIt - y) == true)
+                        if (CheckPointForWinCondition(yIt, xIt, markType,ref maxMarkCount, toMarkWinRow, markCount + 1, xIt - x, yIt - y) == true)
                         {
+                            // Mark cell as winning one via script 
+                            MarkCell markCellScript = _gameObjectsMarksCells2DList[y][x].GetComponent<MarkCell>();
+                            if (markCellScript.MarkType == MarkType.Cross) { markCellScript.MarkType = MarkType.CrossWin; }
+                            if (markCellScript.MarkType == MarkType.Circle) { markCellScript.MarkType = MarkType.CircleWin; }
                             Debug.Log("(Possible) Win condition from point [" + y + "][" + x + "] towards point"
                                 + "[" + yIt + "]" + "[" + xIt + "]" + " with " + maxMarkCount + " marks");
                             return true;
@@ -325,6 +331,14 @@ public class FieldControlManager : MonoBehaviour
             // If, we reached our win row quantity - return true
             if (markCount == _winRowQuant)
             {
+                // Check if we were asked to mark win row
+                if (toMarkWinRow == true)
+                {
+                    // Mark cell as winning one via script 
+                    MarkCell markCellScript = _gameObjectsMarksCells2DList[y][x].GetComponent<MarkCell>();
+                    if (markCellScript.MarkType == MarkType.Cross) { markCellScript.MarkType = MarkType.CrossWin; }
+                    if (markCellScript.MarkType == MarkType.Circle) { markCellScript.MarkType = MarkType.CircleWin; }
+                }
                 return true;
             }
             // Else, go further 
@@ -333,13 +347,24 @@ public class FieldControlManager : MonoBehaviour
                 // Check forward and backwards for marks
                 bool forwardBackwardCheck;
                 // Check forward
-                forwardBackwardCheck = CheckPointForWinCondition(y + nextY, x + nextX, markType, ref maxMarkCount, markCount + 1, nextX, nextY, isReverse);
+                forwardBackwardCheck = CheckPointForWinCondition(y + nextY, x + nextX, markType, ref maxMarkCount, toMarkWinRow, markCount + 1, nextX, nextY, isReverse);
                 if (forwardBackwardCheck == false && isReverse == false)
                 {
                     // Decrease win count, because we go backwards
                     markCount = 1;
                     // Check backwards
-                    forwardBackwardCheck = CheckPointForWinCondition(y - nextY, x - nextX, markType, ref maxMarkCount, markCount + 1, -nextX, -nextY, true);
+                    forwardBackwardCheck = CheckPointForWinCondition(y - nextY, x - nextX, markType, ref maxMarkCount, toMarkWinRow, markCount + 1, -nextX, -nextY, true);
+                }
+                // Check if we were asked to mark win row
+                if (toMarkWinRow == true)
+                {
+                    if (forwardBackwardCheck == true)
+                    {
+                        // Mark cell as winning one via script 
+                        MarkCell markCellScript = _gameObjectsMarksCells2DList[y][x].GetComponent<MarkCell>();
+                        if (markCellScript.MarkType == MarkType.Cross) { markCellScript.MarkType = MarkType.CrossWin; }
+                        if (markCellScript.MarkType == MarkType.Circle) { markCellScript.MarkType = MarkType.CircleWin; }
+                    }
                 }
                 // Return result
                 return forwardBackwardCheck;
@@ -398,6 +423,8 @@ public class FieldControlManager : MonoBehaviour
                         {
                             // Win
                             Debug.Log(TurnState.ToString() + " has won!");
+                            // Ask to mark win row
+                            CheckPointForWinCondition(i, j, TurnState, ref maxQuantityOfMarks, true);
                             return;
                         }
                         Debug.Log(TurnState.ToString() + " in a row: " + maxQuantityOfMarks);

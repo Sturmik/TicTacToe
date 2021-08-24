@@ -7,7 +7,9 @@ public enum MarkType
 {
     Empty,
     Cross,
-    Circle
+    CrossWin,
+    Circle,
+    CircleWin
 }
 
 // Mark cell will represent cross or circle
