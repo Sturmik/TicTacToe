@@ -31,8 +31,10 @@ public class GameManager : MonoBehaviour
     // Game edit interface
     [SerializeField] private GameObject _gameEditInterface;
     // Game edit mark choice
+    // There must be two interface elements. First is cross choice, second is circle choice
     [SerializeField] private GameObject[] _gameEditInterfaceMarkChoice;
     // Game edit game mode choice
+    // There must be two interface elements. First is human vs computer, second is computer vs computer
     [SerializeField] private GameObject[] _gameEditInterfaceGameModeChoice;
     // Game edit field size
     [SerializeField] private Slider _gameEditInterfaceFieldSizeSlider;
@@ -42,6 +44,21 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Text _gameEditInterfaceWinRowQuantText;
     // Game area interface
     [SerializeField] private GameObject _gameAreaInterface;
+    // Game are recent turn
+    // There must be two interface elements. First is cross turn, second is circle turn
+    [SerializeField] private GameObject[] _gameAreaRecentTurn;
+    // Game area cross player
+    // There must be two interface elements. First is human, second is computer
+    [SerializeField] private GameObject[] _gameAreaCrossPlayer;
+    [SerializeField] private Text _gameAreaCrossPlayerWinCounterText;
+    // Game area circle player
+    // There must be two interface elements. First is human, second is computer
+    [SerializeField] private GameObject[] _gameAreaCirclePlayer;
+    [SerializeField] private Text _gameAreaCirclePlayerWinCounterText;
+    // Game are draw counter
+    [SerializeField] private Text _gameAreaDrawCounterText;
+    // Button for next round start
+    [SerializeField] private GameObject _nextRoundButton;
 
     [Header("Field control prefab")]
     // Field control prefab
@@ -56,6 +73,12 @@ public class GameManager : MonoBehaviour
     private int _fieldSize;
     // Field control script
     private FieldControlManager _fieldControlScript;
+    // Win counters
+    private int _crossWinCounter;
+    private int _circleWinCounter;
+    private int _drawCounter;
+    // Field mark is changing the right of the first turn to the circle and then to the cross
+    private MarkType _turnCycle;
 
     [Header("Inputs prefabs")]
     // Human input
@@ -93,7 +116,9 @@ public class GameManager : MonoBehaviour
     {
         // Disable all other interfaces
         _gameEditInterface.SetActive(false);
-        _gameAreaInterface.SetActive(false);
+        _gameAreaInterface.SetActive(false);       
+        // Hide button
+        _nextRoundButton.SetActive(false);
         // Set default parameters
         SetPlayerMarkType(0);
         SetGameMode(0);
@@ -197,10 +222,28 @@ public class GameManager : MonoBehaviour
         _gameEditInterface.SetActive(false);
         // Activate game area
         _gameAreaInterface.SetActive(true);
+        // Hide button
+        _nextRoundButton.SetActive(false);
         // Detach previous inputs
         _fieldControlScript.DisableField(true);
         // Create field
         _fieldControlScript.CreateField(MarkType.Cross, _winRowQuant, _fieldSize);
+        // Getting recent turn
+        _turnCycle = _fieldControlScript.TurnState;
+        // Subscribe to field updates
+        _fieldControlScript.FieldIsMarked -= UpdateGameArea;
+        _fieldControlScript.FieldIsMarked += UpdateGameArea;
+        // Update counters
+        ResetCounters();
+        // First, clear previous players sprites
+        for (int i = 0; i < _gameAreaCirclePlayer.Length; i++)
+        {
+            _gameAreaCirclePlayer[i].SetActive(false);
+        }
+        for (int i = 0; i < _gameAreaCrossPlayer.Length; i++)
+        {
+            _gameAreaCrossPlayer[i].SetActive(false);
+        }
         // Setup inputs
         if (_gameMode_HvsC_HvsH == false)
         {
@@ -209,11 +252,17 @@ public class GameManager : MonoBehaviour
             {
                 _fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
                     SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
+                // Activating according sprites
+                _gameAreaCrossPlayer[0].SetActive(true);
+                _gameAreaCirclePlayer[1].SetActive(true);
             }
             else
             {
                 _fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
                     SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
+                // Activating according sprites
+                _gameAreaCrossPlayer[1].SetActive(true);
+                _gameAreaCirclePlayer[0].SetActive(true);
             }
         }
         else
@@ -221,14 +270,90 @@ public class GameManager : MonoBehaviour
             // Human vs human
             _fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
                   SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
+            // Activating according sprites
+            _gameAreaCrossPlayer[0].SetActive(true);
+            _gameAreaCirclePlayer[0].SetActive(true);
         }
+        UpdateGameArea();
     }
 
     #endregion
 
     #region GameArea
 
+    // Resets all counters
+    public void ResetCounters()
+    {
+        _crossWinCounter = _circleWinCounter = _drawCounter = 0;
+        _gameAreaCrossPlayerWinCounterText.text
+            = _gameAreaCirclePlayerWinCounterText.text
+            = _gameAreaDrawCounterText.text = _crossWinCounter.ToString();
+    }
 
+    // Updates counters
+    public void UpdateCounters()
+    {
+        _gameAreaCrossPlayerWinCounterText.text = _crossWinCounter.ToString();
+        _gameAreaCirclePlayerWinCounterText.text = _circleWinCounter.ToString();
+        _gameAreaDrawCounterText.text = _drawCounter.ToString();
+    }
+
+    // Updates game area data
+    public void UpdateGameArea()
+    {
+        // If we finished game
+        if (_fieldControlScript.IsGameOverConditionReached == true)
+        {
+            // Check who has won
+            switch (_fieldControlScript.TurnState)
+            {
+                // Cross win
+                case MarkType.Cross:
+                    _crossWinCounter++;
+                    break;
+                // Circle win
+                case MarkType.Circle:
+                    _circleWinCounter++;
+                    break;
+                // Draw
+                case MarkType.Empty:
+                    _drawCounter++;
+                    break;
+            }
+            // Turn on button for next round
+            _nextRoundButton.SetActive(true);
+            // Update score
+            UpdateCounters();
+        }
+        else
+        {
+            // Update turn state
+            switch (_fieldControlScript.TurnState)
+            {
+                // Cross win
+                case MarkType.Cross:
+                    _gameAreaRecentTurn[0].SetActive(true);
+                    _gameAreaRecentTurn[1].SetActive(false);
+                    break;
+                // Circle win
+                case MarkType.Circle:
+                    _gameAreaRecentTurn[0].SetActive(false);
+                    _gameAreaRecentTurn[1].SetActive(true);
+                    break;
+            }
+        }
+    }
+   
+    // Starts next round
+    public void NextRound()
+    {
+        // Hide button
+        _nextRoundButton.SetActive(false);
+        // Change turn cycle
+        _turnCycle = _turnCycle == MarkType.Cross ? MarkType.Circle : MarkType.Cross;
+        // Create the field
+        _fieldControlScript.CreateField(_turnCycle, _winRowQuant, _fieldSize);
+    }
 
     #endregion
 

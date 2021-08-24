@@ -91,9 +91,9 @@ public class FieldControlManager : MonoBehaviour
     /// <summary>
     /// Sets up inputs for this field
     /// </summary>
-    /// <param name="firstInputObject">First input(will have the right to go first)</param>
+    /// <param name="firstInputObject">First input</param>
     /// <param name="secondInputObject">Second input</param>
-    public void SetInputs(GameObject firstInputObject, GameObject secondInputObject)
+    public void SetInputs(GameObject firstInputObject, GameObject secondInputObject, MarkType _firstObjectMark = MarkType.Cross, MarkType _secondObjectMark = MarkType.Circle)
     {
         // Check if objects are null referenced
         if (firstInputObject == null || secondInputObject == null)
@@ -117,26 +117,29 @@ public class FieldControlManager : MonoBehaviour
         // Attach new inputs and set their marks
         _firstInputCheckGameObject = firstInputObject;
         _secondInputCheckGameObject = secondInputObject;
-        UpdateInputsTurnStates();
+        // Check if marks are correct
+        if (_firstObjectMark != MarkType.Cross && _firstObjectMark != MarkType.Circle
+            || _secondObjectMark != MarkType.Cross && _secondObjectMark != MarkType.Circle)
+        {
+            _firstObjectMark = MarkType.Cross;
+            _secondObjectMark = MarkType.Circle;
+        }
+        // Set inputs
+        _firstInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(_firstObjectMark, this);
+        _secondInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(_secondObjectMark, this);
         // Invoke event
         FieldIsMarked?.Invoke();
-    }
-
-    // Updates turn states of inputs
-    public void UpdateInputsTurnStates()
-    {
-        if (_firstInputCheckGameObject != null || _secondInputCheckGameObject != null)
-        {
-            _firstInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState, this);
-            _secondInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState == MarkType.Cross ? MarkType.Circle : MarkType.Cross, this);
-        }
     }
 
     /// <summary>
     /// Creates field for TicTacToe play 
     /// </summary>
-    /// <param name="xStartPos">X center position</param>
-    /// <param name="yStartPos">Y center position</param>
+    /// <param name="firstTurn">Who will have first turn</param>
+    /// <param name="winRowQuant"></param>
+    /// <param name="fieldSize"></param>
+    /// <param name="markFieldSizeOnScreen"></param>
+    /// <param name="xCenterPos"></param>
+    /// <param name="yCenterPos"></param>
     public void CreateField(MarkType firstTurn = MarkType.Cross, int winRowQuant = 3, int fieldSize = 3,
         float markFieldSizeOnScreen = 2, float xCenterPos = 0, float yCenterPos = 0)
     {
@@ -216,8 +219,6 @@ public class FieldControlManager : MonoBehaviour
                 _marksTypes2DList[y].Add(MarkType.Empty);
             }
         }
-        // Update inputs
-        UpdateInputsTurnStates();
         // Invoke event
         FieldIsMarked?.Invoke();
     }
@@ -453,18 +454,20 @@ public class FieldControlManager : MonoBehaviour
                             Debug.Log(TurnState.ToString() + " has won!");
                             // Ask to mark win row
                             CheckPointForGameOverCondition(i, j, TurnState, ref maxQuantityOfMarks, true);
-                            return;
                         }
                         // Check for draw
                         else if (CheckFieldForDrawCondition() == true)
                         {
                             Debug.Log("Draw!");
-                            return;
+                        }
+                        // Else change turn
+                        else
+                        {
+                            // Changing next turn mark
+                            if (_turnState == MarkType.Cross) { _turnState = MarkType.Circle; }
+                            else { _turnState = MarkType.Cross; }
                         }
                         Debug.Log(TurnState.ToString() + " in a row: " + maxQuantityOfMarks);
-                        // Changing next turn mark
-                        if (_turnState == MarkType.Cross) { _turnState = MarkType.Circle; }
-                        else { _turnState = MarkType.Cross; }
                         // Calling event
                         FieldIsMarked?.Invoke();
                         return;

@@ -49,7 +49,12 @@ public class InputAI : InputCheck
     private void AnalyzeAndMarkField()
     {
         // If it is not our turn - do nothing
-        if (_userMarkType != _fieldControl.TurnState || _userMarkType == MarkType.Empty) { return; }
+        if (_userMarkType != _fieldControl.TurnState ||
+            _userMarkType == MarkType.Empty ||
+            _fieldControl.IsGameOverConditionReached) 
+        { 
+            return;
+        }
         // Variable for comparing priority level
         int tempPriorityLevel = 0;
         // Reinitialize variables

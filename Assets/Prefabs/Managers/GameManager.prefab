@@ -57,6 +57,19 @@ MonoBehaviour:
   _gameEditInterfaceWinRowQuantSlider: {fileID: 0}
   _gameEditInterfaceWinRowQuantText: {fileID: 0}
   _gameAreaInterface: {fileID: 0}
+  _gameAreaRecentTurn:
+  - {fileID: 0}
+  - {fileID: 0}
+  _gameAreaCrossPlayer:
+  - {fileID: 0}
+  - {fileID: 0}
+  _gameAreaCrossPlayerWinCounterText: {fileID: 0}
+  _gameAreaCirclePlayer:
+  - {fileID: 0}
+  - {fileID: 0}
+  _gameAreaCirclePlayerWinCounterText: {fileID: 0}
+  _gameAreaDrawCounterText: {fileID: 0}
+  _nextRoundButton: {fileID: 0}
   _fieldControl: {fileID: 7276220160024155433, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
   _inputUser: {fileID: 3952677897574468031, guid: 117ae658871cb8240b701823b388065c, type: 3}
   _inputAI: {fileID: 7571240700054928870, guid: e1059e448eef8a942a8028a6b1103f5d, type: 3}
