@@ -56,10 +56,12 @@ public class FieldControlManager : MonoBehaviour
     public  MarkType TurnState
         { get { return _turnState; }}
 
+    // Win condition defines, if the game was finished
+    private bool _isGameOverConditionReached;
     /// <summary>
     /// Is win condition reached (if it is true, you can see who has won by getting TurnState property)
     /// </summary>
-    public bool IsWinConditionReached { get; set; }
+    public bool IsGameOverConditionReached { get { return _isGameOverConditionReached; } }
 
     // Input check for the field and the game objects, which they are attached to 
     private GameObject _firstInputCheckGameObject;
@@ -79,10 +81,7 @@ public class FieldControlManager : MonoBehaviour
 
     private void OnDisable()
     {
-        DisableField();
-        // Disable inputs
-        _firstInputCheckGameObject.SetActive(false);
-        _secondInputCheckGameObject.SetActive(false);
+        DisableField(true);
     }
 
     #endregion
@@ -93,20 +92,20 @@ public class FieldControlManager : MonoBehaviour
     /// Sets up inputs for this field
     /// </summary>
     /// <param name="firstInputObject">First input(will have the right to go first)</param>
-    /// <param name="secondInputObject"></param>
+    /// <param name="secondInputObject">Second input</param>
     public void SetInputs(GameObject firstInputObject, GameObject secondInputObject)
     {
         // Check if objects are null referenced
         if (firstInputObject == null || secondInputObject == null)
         {
-            Debug.LogWarning("Objects passed to the input of the field are null referenced!");
+            Debug.LogError("Objects passed to the input of the field are null referenced!");
             return;
         }
         // Check gameobjects
         if (firstInputObject.GetComponent<InputCheck>() == null
             || secondInputObject.GetComponent<InputCheck>() == null)
         {
-            Debug.LogWarning("Objects, which were passed to the input of the field do not have InputCheck inherited script!");
+            Debug.LogError("Objects, which were passed to the input of the field do not have InputCheck inherited script!");
             return;
         }
         // Deactivate previous inputs, if there are ones
@@ -117,11 +116,20 @@ public class FieldControlManager : MonoBehaviour
         }
         // Attach new inputs and set their marks
         _firstInputCheckGameObject = firstInputObject;
-        _firstInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState, this);
         _secondInputCheckGameObject = secondInputObject;
-        _secondInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState == MarkType.Cross ? MarkType.Circle : MarkType.Cross, this);
+        UpdateInputsTurnStates();
         // Invoke event
         FieldIsMarked?.Invoke();
+    }
+
+    // Updates turn states of inputs
+    public void UpdateInputsTurnStates()
+    {
+        if (_firstInputCheckGameObject != null || _secondInputCheckGameObject != null)
+        {
+            _firstInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState, this);
+            _secondInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(TurnState == MarkType.Cross ? MarkType.Circle : MarkType.Cross, this);
+        }
     }
 
     /// <summary>
@@ -142,6 +150,7 @@ public class FieldControlManager : MonoBehaviour
         _winRowQuant = winRowQuant;
         _markFieldSizeOnScreen = markFieldSizeOnScreen;
         _fieldSize = fieldSize;
+        _isGameOverConditionReached = false;
         // Variables for line draw (will be used later in the function)
         float xLineStartPos = xCenterPos;
         float yLineStartPos = yCenterPos;
@@ -207,6 +216,8 @@ public class FieldControlManager : MonoBehaviour
                 _marksTypes2DList[y].Add(MarkType.Empty);
             }
         }
+        // Update inputs
+        UpdateInputsTurnStates();
         // Invoke event
         FieldIsMarked?.Invoke();
     }
@@ -214,7 +225,7 @@ public class FieldControlManager : MonoBehaviour
     /// <summary>
     /// Disables whole field
     /// </summary>
-    public void DisableField()
+    public void DisableField(bool detachInputs = false)
     {
         // Clear all lists
         if (_linesList == null ||
@@ -239,27 +250,41 @@ public class FieldControlManager : MonoBehaviour
         _linesList.Clear();
         _gameObjectsMarksCells2DList.Clear();
         _marksTypes2DList.Clear();
+        // Detach inputs
+        if (detachInputs == true)
+        {
+            if (_firstInputCheckGameObject != null
+                && _secondInputCheckGameObject != null)
+            {
+                _firstInputCheckGameObject.SetActive(false);
+                _secondInputCheckGameObject.SetActive(false);
+                _firstInputCheckGameObject = _secondInputCheckGameObject = null;
+            }
+        }
     }
 
     /// <summary>
     /// Checks whole field for win condition
     /// </summary>
     /// <returns></returns>
-    private bool CheckFieldForWinCondition()
+    private bool CheckFieldForDrawCondition()
     {
         // Variable for storing max amount of marks, which go through this point
-        int maxQuantityOfMarks = 0;
         for (int i = 0; i < _gameObjectsMarksCells2DList.Count; i++)
         {
             for (int j = 0; j < _gameObjectsMarksCells2DList.Count; j++)
             {
-                if (CheckPointForWinCondition(i, j, _marksTypes2DList[i][j], ref maxQuantityOfMarks) == true)
+                if (_marksTypes2DList[i][j] == MarkType.Empty)
                 {
-                    return true;
+                    return false;
                 }
             }
         }
-        return false;
+        // If we have draw, we set it as game over condition
+        _isGameOverConditionReached = true;
+        // And then set turn state to empty, which means, that it is draw
+        _turnState = MarkType.Empty;
+        return true;
     }
 
     /// <summary>
@@ -275,7 +300,7 @@ public class FieldControlManager : MonoBehaviour
     /// <param name="nextY">Next y to check for the match</param>
     /// <param name="isReverse">For reverse check in recursion</param>
     /// <returns>Does point create condition of winning</returns>
-    public bool CheckPointForWinCondition(int y, int x, MarkType markType, ref int maxMarkCount, bool toMarkWinRow = false,
+    public bool CheckPointForGameOverCondition(int y, int x, MarkType markType, ref int maxMarkCount, bool toMarkWinRow = false,
         int markCount = 1, int nextX = 0, int nextY = 0, bool isReverse = false)
     {
         // Check, if X and Y are correct
@@ -307,7 +332,7 @@ public class FieldControlManager : MonoBehaviour
                         && xIt >= 0 && xIt < _marksTypes2DList.Count)
                     {
                         // Check next point for win condition
-                        if (CheckPointForWinCondition(yIt, xIt, markType,ref maxMarkCount, toMarkWinRow, markCount + 1, xIt - x, yIt - y) == true)
+                        if (CheckPointForGameOverCondition(yIt, xIt, markType,ref maxMarkCount, toMarkWinRow, markCount + 1, xIt - x, yIt - y) == true)
                         {
                             // Mark cell as winning one via script 
                             if (toMarkWinRow == true)
@@ -350,13 +375,13 @@ public class FieldControlManager : MonoBehaviour
                 // Check forward and backwards for marks
                 bool forwardBackwardCheck;
                 // Check forward
-                forwardBackwardCheck = CheckPointForWinCondition(y + nextY, x + nextX, markType, ref maxMarkCount, toMarkWinRow, markCount + 1, nextX, nextY, isReverse);
+                forwardBackwardCheck = CheckPointForGameOverCondition(y + nextY, x + nextX, markType, ref maxMarkCount, toMarkWinRow, markCount + 1, nextX, nextY, isReverse);
                 if (forwardBackwardCheck == false && isReverse == false)
                 {
                     // Decrease win count, because we go backwards
                     markCount = 1;
                     // Check backwards
-                    forwardBackwardCheck = CheckPointForWinCondition(y - nextY, x - nextX, markType, ref maxMarkCount, toMarkWinRow, markCount + 1, -nextX, -nextY, true);
+                    forwardBackwardCheck = CheckPointForGameOverCondition(y - nextY, x - nextX, markType, ref maxMarkCount, toMarkWinRow, markCount + 1, -nextX, -nextY, true);
                 }
                 // Check if we were asked to mark win row
                 if (toMarkWinRow == true)
@@ -384,7 +409,7 @@ public class FieldControlManager : MonoBehaviour
     public void MarkCellInField(GameObject markCell)
     {
         // Check, if win condition is reached
-        if (IsWinConditionReached == true)
+        if (IsGameOverConditionReached == true)
         {
             Debug.Log("You can't mark this field anymore. Win condition has been reached");
             // We don't allow anyone to mark field anymore,
@@ -421,13 +446,19 @@ public class FieldControlManager : MonoBehaviour
                         markCellScript.MarkType = TurnState;
                         _marksTypes2DList[i][j] = _turnState;
                         // Checking win condition
-                        IsWinConditionReached = CheckPointForWinCondition(i, j, TurnState, ref maxQuantityOfMarks);
-                        if (IsWinConditionReached == true)
+                        _isGameOverConditionReached = CheckPointForGameOverCondition(i, j, TurnState, ref maxQuantityOfMarks);
+                        if (IsGameOverConditionReached == true)
                         {
                             // Win
                             Debug.Log(TurnState.ToString() + " has won!");
                             // Ask to mark win row
-                            CheckPointForWinCondition(i, j, TurnState, ref maxQuantityOfMarks, true);
+                            CheckPointForGameOverCondition(i, j, TurnState, ref maxQuantityOfMarks, true);
+                            return;
+                        }
+                        // Check for draw
+                        else if (CheckFieldForDrawCondition() == true)
+                        {
+                            Debug.Log("Draw!");
                             return;
                         }
                         Debug.Log(TurnState.ToString() + " in a row: " + maxQuantityOfMarks);

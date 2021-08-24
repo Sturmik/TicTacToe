@@ -29,6 +29,7 @@ public class InputAI : InputCheck
     {
         // Unsubscribe
         _fieldControl.FieldIsMarked -= AnalyzeAndMarkField;
+        _userMarkType = MarkType.Empty;
     }
 
     #endregion
@@ -39,7 +40,8 @@ public class InputAI : InputCheck
     public override void SetInputToField(MarkType inputMarkType, FieldControlManager fieldControl)
     {
         base.SetInputToField(inputMarkType, fieldControl);
-        // Subscribe to the event
+        // First unsubscribe(just in case) and then subscribe to the event
+        _fieldControl.FieldIsMarked -= AnalyzeAndMarkField;
         _fieldControl.FieldIsMarked += AnalyzeAndMarkField;
     }
 
@@ -47,7 +49,7 @@ public class InputAI : InputCheck
     private void AnalyzeAndMarkField()
     {
         // If it is not our turn - do nothing
-        if (_userMarkType != _fieldControl.TurnState) { return; }
+        if (_userMarkType != _fieldControl.TurnState || _userMarkType == MarkType.Empty) { return; }
         // Variable for comparing priority level
         int tempPriorityLevel = 0;
         // Reinitialize variables
@@ -80,7 +82,7 @@ public class InputAI : InputCheck
                         _fieldControl.MarksTypes2DList[i][j] = _userMarkType;
                     }
                     // Start analyze
-                    _ = _fieldControl.CheckPointForWinCondition(i, j, _fieldControl.MarksTypes2DList[i][j], ref tempPriorityLevel);
+                    _ = _fieldControl.CheckPointForGameOverCondition(i, j, _fieldControl.MarksTypes2DList[i][j], ref tempPriorityLevel);
                     // if priority level is the same as win row quant and we check cells with our mark then mark this cell immediately
                     if (tempPriorityLevel == _fieldControl.WinRowQuant && check == 1)
                     {
