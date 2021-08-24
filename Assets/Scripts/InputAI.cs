@@ -81,8 +81,18 @@ public class InputAI : InputCheck
                     }
                     // Start analyze
                     _ = _fieldControl.CheckPointForWinCondition(i, j, _fieldControl.MarksTypes2DList[i][j], ref tempPriorityLevel);
-                    // Check priority level, if it has changed, update the list
-                    if (tempPriorityLevel > _priorityList.priorityLevel)
+                    // if priority level is the same as win row quant and we check cells with our mark then mark this cell immediately
+                    if (tempPriorityLevel == _fieldControl.WinRowQuant && check == 1)
+                    {
+                        // Mark this field as empty
+                        _fieldControl.MarksTypes2DList[i][j] = MarkType.Empty;
+                        // Actually mark it
+                        _fieldControl.MarkCellInField(_fieldControl.GameObjectsMarksCells2DList[i][j]);
+                        // End function
+                        return;
+                    }
+                    // Else check priority level, if it has changed, update the list
+                    else if (tempPriorityLevel > _priorityList.priorityLevel)
                     {
                         _priorityList.priorityLevel = tempPriorityLevel;
                         _priorityList.markCellList.Clear();
@@ -92,16 +102,6 @@ public class InputAI : InputCheck
                     else if (tempPriorityLevel == _priorityList.priorityLevel)
                     {
                         _priorityList.markCellList.Add(_fieldControl.GameObjectsMarksCells2DList[i][j]);
-                    }
-                    // Else if priority level is the same as win row quant and we check cells with our mark then mark this cell immediately
-                    else if (tempPriorityLevel == _fieldControl.WinRowQuant && check == 1)
-                    {
-                        // Mark this field as empty
-                        _fieldControl.MarksTypes2DList[i][j] = MarkType.Empty;
-                        // Actually mark it
-                        _fieldControl.MarkCellInField(_fieldControl.GameObjectsMarksCells2DList[i][j]);
-                        // End function
-                        return;
                     }
                     // Set field to being empty again
                     _fieldControl.MarksTypes2DList[i][j] = MarkType.Empty;

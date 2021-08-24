@@ -53,7 +53,7 @@ public class GameManager : MonoBehaviour
             SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
         fieldControlScript2.DisableField();
         fieldControlScript2.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
-            SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
+            SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
         fieldControlScript2.CreateField(MarkType.Cross, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, 4);
     }
 }

@@ -261,5 +261,13 @@ PrefabInstance:
       propertyPath: m_Name
       value: GameManager
       objectReference: {fileID: 0}
+    - target: {fileID: 3635776999920553831, guid: eadeb9872f57b23468a12d93a146dbec, type: 3}
+      propertyPath: _fieldSize
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3635776999920553831, guid: eadeb9872f57b23468a12d93a146dbec, type: 3}
+      propertyPath: _winRowQuant
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: eadeb9872f57b23468a12d93a146dbec, type: 3}
