@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,6 +9,17 @@ public class FieldControlManager : MonoBehaviour
 
     // Event, which signals that field was marked
     public event Action FieldIsMarked;
+
+    // Event, which sets field inputs
+    public static event Action<GameObject, MarkType, FieldControlManager> SetFieldInput;
+
+    // Event, which returns mark type of specific gameobject mark cell
+    public delegate void GetMarkType(GameObject obj, ref MarkType markType);
+    public static GetMarkType GetCellMarkType;
+    // Event, which sets mark type for specific game object
+    public static event Action<GameObject, MarkType> SetCellMarkType;
+    // Event, which signals specific mark cell gameobject to update itself to win condition state
+    public static event Action<GameObject> SetCellAsWinning;
 
     #endregion
 
@@ -102,8 +112,8 @@ public class FieldControlManager : MonoBehaviour
             return;
         }
         // Check gameobjects
-        if (firstInputObject.GetComponent<InputCheck>() == null
-            || secondInputObject.GetComponent<InputCheck>() == null)
+        if (firstInputObject.GetComponent<InputBase>() == null
+            || secondInputObject.GetComponent<InputBase>() == null)
         {
             Debug.LogError("Objects, which were passed to the input of the field do not have InputCheck inherited script!");
             return;
@@ -125,8 +135,8 @@ public class FieldControlManager : MonoBehaviour
             _secondObjectMark = MarkType.Circle;
         }
         // Set inputs
-        _firstInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(_firstObjectMark, this);
-        _secondInputCheckGameObject.GetComponent<InputCheck>().SetInputToField(_secondObjectMark, this);
+        SetFieldInput(_firstInputCheckGameObject, _firstObjectMark, this);
+        SetFieldInput(_secondInputCheckGameObject, _secondObjectMark, this);
         // Invoke event
         FieldIsMarked?.Invoke();
     }
@@ -140,7 +150,7 @@ public class FieldControlManager : MonoBehaviour
     /// <param name="markFieldSizeOnScreen"></param>
     /// <param name="xCenterPos"></param>
     /// <param name="yCenterPos"></param>
-    public void CreateField(MarkType firstTurn = MarkType.Cross, int winRowQuant = 3, int fieldSize = 3,
+    public void CreateField(SpawnManager spawnManager, MarkType firstTurn = MarkType.Cross, int winRowQuant = 3, int fieldSize = 3,
         float markFieldSizeOnScreen = 2, float xCenterPos = 0, float yCenterPos = 0)
     {
         // Disable field before creating new one
@@ -183,12 +193,12 @@ public class FieldControlManager : MonoBehaviour
         lineOffset = (_fieldSize - 1) / 2 - lineOffset;
         xLineStartPos -= adaptFieldSize* lineOffset;
         yLineStartPos += adaptFieldSize * lineOffset;
-        // Draw vertical lines
+        // Draw vertical and horizontal lines
         for (int lineIt = 0; lineIt < _fieldSize - 1; lineIt++)
         {
             // Spawn line
-            GameObject spawnedXLine = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
-            GameObject spawnedYline = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
+            GameObject spawnedXLine = spawnManager.SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
+            GameObject spawnedYline = spawnManager.SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
             // Scale object
             spawnedXLine.transform.localScale = new Vector3(adaptFieldSize / 4 / 8, adaptFieldSize * _fieldSize);
             spawnedYline.transform.localScale = new Vector3(spawnedXLine.transform.localScale.y, spawnedXLine.transform.localScale.x);
@@ -208,7 +218,7 @@ public class FieldControlManager : MonoBehaviour
             for (int x = 0; x < _fieldSize; x++)
             {
                 // Spawn mark cell
-                GameObject spawnedMarkCell = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.MarkCell, _markCell);
+                GameObject spawnedMarkCell = spawnManager.SpawnObject(SpawnManager.PoolType.MarkCell, _markCell);
                 // Rescale object
                 spawnedMarkCell.transform.localScale = new Vector3(adaptFieldSize, adaptFieldSize);
                 // Set it on new position
@@ -224,7 +234,7 @@ public class FieldControlManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Disables whole field
+    /// Disables whole field and detaches input, if needed
     /// </summary>
     public void DisableField(bool detachInputs = false)
     {
@@ -296,13 +306,42 @@ public class FieldControlManager : MonoBehaviour
     /// <param name="markType">Mark Type</param>
     /// <param name="maxMarkCount">Optional variable for storing max quantity of specific type of marks in a row</param>
     /// <param name="toMarkWinRow">Optional variable to ask, if we want to mark win row</param>
-    /// <param name="markCount">Count of matched marks in the row</param>
-    /// <param name="nextX">Next x to check for the match</param>
-    /// <param name="nextY">Next y to check for the match</param>
-    /// <param name="isReverse">For reverse check in recursion</param>
     /// <returns>Does point create condition of winning</returns>
-    public bool CheckPointForGameOverCondition(int y, int x, MarkType markType, ref int maxMarkCount, bool toMarkWinRow = false,
-        int markCount = 1, int nextX = 0, int nextY = 0, bool isReverse = false)
+    public bool CheckPointForGameOverCondition(int y, int x, MarkType markType, ref int maxMarkCount, bool toMarkWinRow = false)
+    {
+        // We analyze all surroundings of the point
+        maxMarkCount = 1;
+        for (int yIt = y - 1; yIt <= y + 1; yIt++)
+        {
+            for (int xIt = x - 1; xIt <= x + 1; xIt++)
+            {
+                // Ignore same point as ours
+                if (xIt == x && yIt == y) { continue; }
+                // Check, if we are in the boundaries
+                if (yIt >= 0 && yIt < _marksTypes2DList.Count
+                    && xIt >= 0 && xIt < _marksTypes2DList.Count)
+                {
+                    // Check next point for win condition
+                    if (CheckRowForGameOverCondition(yIt, xIt, markType, ref maxMarkCount, toMarkWinRow, xIt - x, yIt - y) == true)
+                    {
+                        // Mark cell as winning one via script 
+                        if (toMarkWinRow == true)
+                        {
+                            SetCellAsWinning(_gameObjectsMarksCells2DList[y][x]);
+                        }
+                        Debug.Log("(Possible) Win condition from point [" + y + "][" + x + "] towards point"
+                            + "[" + yIt + "]" + "[" + xIt + "]" + " with " + maxMarkCount + " marks");
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // Recursive function for row analyze
+    private bool CheckRowForGameOverCondition(int y, int x, MarkType markType, ref int maxMarkCount, bool toMarkWinRow = false,
+        int nextX = 0, int nextY = 0, int markCount = 1, bool isReverse = false)
     {
         // Check, if X and Y are correct
         if (y < 0 || y >= _marksTypes2DList.Count
@@ -316,90 +355,42 @@ public class FieldControlManager : MonoBehaviour
         {
             return false;
         }
-        // Next, we analyze all surroundings of the point
-        // (If nextX and nextY equals zero, this point counts as starting one)
-        if (nextX == 0 && nextY == 0)
+        // Update max mark count
+        if (markCount >= maxMarkCount)
         {
-            // Variable for storing max amount of marks, which go through this point
-            maxMarkCount = 1;
-            for (int yIt = y - 1; yIt <= y + 1; yIt++)
+            maxMarkCount = markCount;
+        }
+        // If, we reached our win row quantity - return true
+        if (markCount == _winRowQuant)
+        {
+            // Check if we were asked to mark win row
+            if (toMarkWinRow == true)
             {
-                for (int xIt = x - 1; xIt <= x + 1; xIt++)
-                {
-                    // Ignore same point as ours
-                    if (xIt == x && yIt == y) { continue; }
-                    // Check, if we are in the boundaries
-                    if (yIt >= 0 && yIt < _marksTypes2DList.Count
-                        && xIt >= 0 && xIt < _marksTypes2DList.Count)
-                    {
-                        // Check next point for win condition
-                        if (CheckPointForGameOverCondition(yIt, xIt, markType,ref maxMarkCount, toMarkWinRow, markCount + 1, xIt - x, yIt - y) == true)
-                        {
-                            // Mark cell as winning one via script 
-                            if (toMarkWinRow == true)
-                            {
-                                MarkCell markCellScript = _gameObjectsMarksCells2DList[y][x].GetComponent<MarkCell>();
-                                if (markCellScript.MarkType == MarkType.Cross) { markCellScript.MarkType = MarkType.CrossWin; }
-                                if (markCellScript.MarkType == MarkType.Circle) { markCellScript.MarkType = MarkType.CircleWin; }
-                            }
-                            Debug.Log("(Possible) Win condition from point [" + y + "][" + x + "] towards point"
-                                + "[" + yIt + "]" + "[" + xIt + "]" + " with " + maxMarkCount + " marks");
-                            return true;
-                        }
-                    }
-                }
+                SetCellAsWinning(_gameObjectsMarksCells2DList[y][x]);
+            }
+            return true;
+        }
+        // Check forward and backwards for marks
+        bool forwardBackwardCheck;
+        // Check forward
+        forwardBackwardCheck = CheckRowForGameOverCondition(y + nextY, x + nextX, markType, ref maxMarkCount, toMarkWinRow, nextX, nextY, markCount + 1, isReverse);
+        if (forwardBackwardCheck == false && isReverse == false)
+        {
+            // Decrease win count, because we go backwards
+            markCount = 1;
+            // Check backwards
+            forwardBackwardCheck = CheckRowForGameOverCondition(y - nextY, x - nextX, markType, ref maxMarkCount, toMarkWinRow, -nextX, -nextY, markCount + 1, true);
+        }
+        // Check if we were asked to mark win row
+        if (toMarkWinRow == true)
+        {
+            if (forwardBackwardCheck == true)
+            {
+                SetCellAsWinning(_gameObjectsMarksCells2DList[y][x]);
             }
         }
-        // Else, we go to the destination (nextX and nextY)
-        else
-        {
-            if (markCount >= maxMarkCount)
-            {
-                maxMarkCount = markCount;
-            }
-            // If, we reached our win row quantity - return true
-            if (markCount == _winRowQuant)
-            {
-                // Check if we were asked to mark win row
-                if (toMarkWinRow == true)
-                {
-                    // Mark cell as winning one via script 
-                    MarkCell markCellScript = _gameObjectsMarksCells2DList[y][x].GetComponent<MarkCell>();
-                    if (markCellScript.MarkType == MarkType.Cross) { markCellScript.MarkType = MarkType.CrossWin; }
-                    if (markCellScript.MarkType == MarkType.Circle) { markCellScript.MarkType = MarkType.CircleWin; }
-                }
-                return true;
-            }
-            // Else, go further 
-            else
-            {
-                // Check forward and backwards for marks
-                bool forwardBackwardCheck;
-                // Check forward
-                forwardBackwardCheck = CheckPointForGameOverCondition(y + nextY, x + nextX, markType, ref maxMarkCount, toMarkWinRow, markCount + 1, nextX, nextY, isReverse);
-                if (forwardBackwardCheck == false && isReverse == false)
-                {
-                    // Decrease win count, because we go backwards
-                    markCount = 1;
-                    // Check backwards
-                    forwardBackwardCheck = CheckPointForGameOverCondition(y - nextY, x - nextX, markType, ref maxMarkCount, toMarkWinRow, markCount + 1, -nextX, -nextY, true);
-                }
-                // Check if we were asked to mark win row
-                if (toMarkWinRow == true)
-                {
-                    if (forwardBackwardCheck == true)
-                    {
-                        // Mark cell as winning one via script 
-                        MarkCell markCellScript = _gameObjectsMarksCells2DList[y][x].GetComponent<MarkCell>();
-                        if (markCellScript.MarkType == MarkType.Cross) { markCellScript.MarkType = MarkType.CrossWin; }
-                        if (markCellScript.MarkType == MarkType.Circle) { markCellScript.MarkType = MarkType.CircleWin; }
-                    }
-                }
-                // Return result
-                return forwardBackwardCheck;
-            }
-        }
-        return false;
+        // Return result
+        return forwardBackwardCheck;
     }
 
     /// <summary>
@@ -417,20 +408,12 @@ public class FieldControlManager : MonoBehaviour
             // because someone has already win
             return;
         }
-        // We will need mark cell script to check, if it is possible to mark a field
-        MarkCell markCellScript = null;
+        MarkType markCellTypeCheck = MarkType.Empty;
+        GetCellMarkType(markCell,ref markCellTypeCheck);
         // Checking, if there is already some mark on this cell
-        try
+        if (markCellTypeCheck != MarkType.Empty)
         {
-            markCellScript = markCell.GetComponent<MarkCell>();
-            if (markCellScript.MarkType != MarkType.Empty)
-            {
-                return;
-            }
-        }
-        catch (Exception error)
-        {
-            Debug.LogError(error.Message);
+            return;
         }
         // Variable for storing max amount of marks, which go through this point
         int maxQuantityOfMarks = 1;
@@ -444,7 +427,7 @@ public class FieldControlManager : MonoBehaviour
                     try
                     {
                         // Changing mark type of the cell according to turn state
-                        markCellScript.MarkType = TurnState;
+                        SetCellMarkType(_gameObjectsMarksCells2DList[i][j],TurnState);
                         _marksTypes2DList[i][j] = _turnState;
                         // Checking win condition
                         _isGameOverConditionReached = CheckPointForGameOverCondition(i, j, TurnState, ref maxQuantityOfMarks);

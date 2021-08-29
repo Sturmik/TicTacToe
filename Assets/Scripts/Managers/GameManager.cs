@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -60,9 +58,13 @@ public class GameManager : MonoBehaviour
     // Button for next round start
     [SerializeField] private GameObject _nextRoundButton;
 
+    [Header("Managers")]
+    // Spawn manager control
+    [SerializeField] private SpawnManager _spawnManagerScript;
+    // Field control manager
+    [SerializeField] private FieldControlManager _fieldControlScript;
+
     [Header("Field control prefab")]
-    // Field control prefab
-    [SerializeField] private GameObject _fieldControl;
     // Chosen mark
     private MarkType _chosenMarkForPlayerOne;
     // Game mode (false = human vs computer, true = human vs human)
@@ -71,8 +73,6 @@ public class GameManager : MonoBehaviour
     private int _winRowQuant;
     // Field size (number of cells _fieldSize x _fieldSize)
     private int _fieldSize;
-    // Field control script
-    private FieldControlManager _fieldControlScript;
     // Win counters
     private int _crossWinCounter;
     private int _circleWinCounter;
@@ -93,10 +93,6 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // Initialize field only one time, after we can reuse it as any times as we want
-        _fieldControl = SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.FieldControl, _fieldControl);
-        // Getting access to the script
-        _fieldControlScript = _fieldControl.GetComponent<FieldControlManager>();
         // First we activate main menu and disable all others
         BackToMainMenu();
         // Spawn demo field
@@ -127,8 +123,8 @@ public class GameManager : MonoBehaviour
         // Activa main menu and demo field
         _mainMenuInterface.SetActive(true);
         // Set input back, disable field and detach input
-        _fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
-             SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
+        _fieldControlScript.SetInputs(_spawnManagerScript.SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
+             _spawnManagerScript.SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
         MainMenuDemoField();
     }
 
@@ -138,7 +134,7 @@ public class GameManager : MonoBehaviour
     {
         // Randomizing the field size
         int fieldSize = UnityEngine.Random.Range(Globals.MIN_FIELD_SIZE + 1, Globals.MAX_FIELD_SIZE);
-        _fieldControlScript.CreateField(MarkType.Cross, fieldSize, fieldSize, 5, 7, -1);
+        _fieldControlScript.CreateField(_spawnManagerScript, MarkType.Cross, fieldSize, fieldSize, 5, 7, -1);
     }    
 
     // Play button method
@@ -227,7 +223,7 @@ public class GameManager : MonoBehaviour
         // Detach previous inputs
         _fieldControlScript.DisableField(true);
         // Create field
-        _fieldControlScript.CreateField(MarkType.Cross, _winRowQuant, _fieldSize);
+        _fieldControlScript.CreateField(_spawnManagerScript, MarkType.Cross, _winRowQuant, _fieldSize);
         // Getting recent turn
         _turnCycle = _fieldControlScript.TurnState;
         // Subscribe to field updates
@@ -250,16 +246,16 @@ public class GameManager : MonoBehaviour
             // Human vs computer
             if (_chosenMarkForPlayerOne == MarkType.Cross)
             {
-                _fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
-                    SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
+                _fieldControlScript.SetInputs(_spawnManagerScript.SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
+                    _spawnManagerScript.SpawnObject(SpawnManager.PoolType.InputAI, _inputAI));
                 // Activating according sprites
                 _gameAreaCrossPlayer[0].SetActive(true);
                 _gameAreaCirclePlayer[1].SetActive(true);
             }
             else
             {
-                _fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
-                    SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
+                _fieldControlScript.SetInputs(_spawnManagerScript.SpawnObject(SpawnManager.PoolType.InputAI, _inputAI),
+                    _spawnManagerScript.SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
                 // Activating according sprites
                 _gameAreaCrossPlayer[1].SetActive(true);
                 _gameAreaCirclePlayer[0].SetActive(true);
@@ -268,8 +264,8 @@ public class GameManager : MonoBehaviour
         else
         {
             // Human vs human
-            _fieldControlScript.SetInputs(SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
-                  SpawnManager.GetInstance().SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
+            _fieldControlScript.SetInputs(_spawnManagerScript.SpawnObject(SpawnManager.PoolType.InputUser, _inputUser),
+                  _spawnManagerScript.SpawnObject(SpawnManager.PoolType.InputUser, _inputUser));
             // Activating according sprites
             _gameAreaCrossPlayer[0].SetActive(true);
             _gameAreaCirclePlayer[0].SetActive(true);
@@ -352,7 +348,7 @@ public class GameManager : MonoBehaviour
         // Change turn cycle
         _turnCycle = _turnCycle == MarkType.Cross ? MarkType.Circle : MarkType.Cross;
         // Create the field
-        _fieldControlScript.CreateField(_turnCycle, _winRowQuant, _fieldSize);
+        _fieldControlScript.CreateField(_spawnManagerScript, _turnCycle, _winRowQuant, _fieldSize);
     }
 
     #endregion

@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,24 +8,11 @@ public class SpawnManager : MonoBehaviour
     {
        MarkCell,
        BuildLine,
-       FieldControl,
        InputUser,
        InputAI
     }
 
     #region Variables
-
-    // Singleton
-    private static SpawnManager _instance;
-    public static SpawnManager GetInstance()
-    {
-        if (_instance == null)
-        {
-            Debug.LogWarning("Instance of " + nameof(SpawnManager) + " is null referenced!");
-            throw new System.Exception("Instance of " + nameof(SpawnManager) + " is null referenced!");
-        }
-        return _instance;
-    }
 
     // Pools
     private List<List<GameObject>> _pools;
@@ -38,8 +24,6 @@ public class SpawnManager : MonoBehaviour
     // Start is called before the first frame update
     private void Awake()
     {
-        // Set instance to this
-        _instance = this;
         // Generate pools
         _pools = new List<List<GameObject>>();
         for (int i = 0; i < PoolType.GetNames(typeof(PoolType)).Length; i++)
@@ -76,7 +60,7 @@ public class SpawnManager : MonoBehaviour
     public GameObject SpawnObject(PoolType poolType, GameObject gameObject) 
     {
         List<GameObject> pool = _pools[(int)poolType];
-        int objInd = IsObjectInPool(pool, gameObject); // If object is indeed in pool, then reactivate it
+        int objInd = GetObjectIndexInPool(pool); // If object is indeed in pool, then reactivate it
         if (objInd != -1)
         {
             pool[objInd].SetActive(true);
@@ -94,8 +78,12 @@ public class SpawnManager : MonoBehaviour
         }
     }
 
-    // Checking if the object is in the pool
-    private int IsObjectInPool(List<GameObject> pool, GameObject obj)
+    /// <summary>
+    /// Returns index of an object in pool, if it exists
+    /// </summary>
+    /// <param name="pool">Pool, where to look for an object</param>
+    /// <returns>Index of and inactive element in pool</returns>
+    private int GetObjectIndexInPool(List<GameObject> pool)
     {
         for (int i = 0; i < pool.Count; i++)
         {

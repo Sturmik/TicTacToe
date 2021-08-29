@@ -1,9 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 // Class for human input
-public class InputUser : InputCheck
+public class InputUser : InputBase
 {
     #region Unity
 

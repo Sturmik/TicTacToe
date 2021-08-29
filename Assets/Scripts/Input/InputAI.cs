@@ -1,12 +1,18 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 // Class for AI input
-public class InputAI : InputCheck
+public class InputAI : InputBase
 {
+    // Turn check for AI 
+    protected enum TurnCheck
+    {
+        Opponent,
+        AI
+    }
+
     // This struct helps AI to decide, which cells are more importnat to mark
-    public struct PriorityList
+    protected struct PriorityList
     {
         // If there is cell with more priority,
         // this variable will change its value to it.
@@ -25,11 +31,13 @@ public class InputAI : InputCheck
 
     #region Unity
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
         // Unsubscribe
-        _fieldControl.FieldIsMarked -= AnalyzeAndMarkField;
+        _fieldControl.FieldIsMarked -= CheckTurn;
         _userMarkType = MarkType.Empty;
+        // Call base on disable
+        base.OnDisable();
     }
 
     #endregion
@@ -37,16 +45,17 @@ public class InputAI : InputCheck
     #region Methods
 
     // Sets input to field
-    public override void SetInputToField(MarkType inputMarkType, FieldControlManager fieldControl)
+    protected override void SetInputToField(GameObject obj, MarkType inputMarkType, FieldControlManager fieldControl)
     {
-        base.SetInputToField(inputMarkType, fieldControl);
+        if (obj != gameObject) return;
+        base.SetInputToField(obj, inputMarkType, fieldControl);
         // First unsubscribe(just in case) and then subscribe to the event
-        _fieldControl.FieldIsMarked -= AnalyzeAndMarkField;
-        _fieldControl.FieldIsMarked += AnalyzeAndMarkField;
+        _fieldControl.FieldIsMarked -= CheckTurn;
+        _fieldControl.FieldIsMarked += CheckTurn;
     }
 
-    // Makes analyze of the field and marks one the most prioritized cells
-    private void AnalyzeAndMarkField()
+    // Checks, if it is turn of AI
+    private void CheckTurn()
     {
         // If it is not our turn - do nothing
         if (_userMarkType != _fieldControl.TurnState ||
@@ -55,6 +64,13 @@ public class InputAI : InputCheck
         { 
             return;
         }
+        // Else start to analyze
+        AnalyzeAndMarkField();
+    }
+
+    // Makes analyze of the field and marks one the most prioritized cells
+    private void AnalyzeAndMarkField()
+    { 
         // Variable for comparing priority level
         int tempPriorityLevel = 0;
         // Reinitialize variables
@@ -67,18 +83,18 @@ public class InputAI : InputCheck
             for (int j = 0; j < _fieldControl.MarksTypes2DList.Count; j++)
             {
                 // If cell is not empty there is no reason to analyze it
-                if  (_fieldControl.MarksTypes2DList[i][j] != MarkType.Empty)
+                if (_fieldControl.MarksTypes2DList[i][j] != MarkType.Empty)
                 {
                     continue;
                 }
                 // First, we analyze our opponent's marks and after that our ones
                 // CHECK = 0 -> Opponent
                 // CHECK = 1 -> AI
-                for (int check = 0; check < 2; check++)
+                for (TurnCheck turnCheck = TurnCheck.Opponent; turnCheck <= TurnCheck.AI; turnCheck++)
                 {
                     // We mark sequentially empty fields with our/opponent mark and update priority
                     // list according to results of previous actions
-                    if (check == 0)
+                    if (turnCheck == TurnCheck.Opponent)
                     {
                         _fieldControl.MarksTypes2DList[i][j] = _userMarkType == MarkType.Cross ? MarkType.Circle : MarkType.Cross;
                     }
@@ -89,7 +105,7 @@ public class InputAI : InputCheck
                     // Start analyze
                     _ = _fieldControl.CheckPointForGameOverCondition(i, j, _fieldControl.MarksTypes2DList[i][j], ref tempPriorityLevel);
                     // if priority level is the same as win row quant and we check cells with our mark then mark this cell immediately
-                    if (tempPriorityLevel == _fieldControl.WinRowQuant && check == 1)
+                    if (tempPriorityLevel == _fieldControl.WinRowQuant && turnCheck == TurnCheck.AI)
                     {
                         // Mark this field as empty
                         _fieldControl.MarksTypes2DList[i][j] = MarkType.Empty;
@@ -121,6 +137,7 @@ public class InputAI : InputCheck
             int randomCell = Random.Range(0, _priorityList.markCellList.Count);
             _fieldControl.MarkCellInField(_priorityList.markCellList[randomCell]);
         }
+
     }
 
     #endregion
