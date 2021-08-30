@@ -8,7 +8,9 @@ public class FieldControlManager : MonoBehaviour
     #region Events
 
     // Event, which signals that field was marked
-    public event Action FieldIsMarked;
+    public event Action CellIsMarked;
+    // Event, which signals that game is over
+    public event Action GameOverIsReached;
 
     // Event, which sets field inputs
     public static event Action<GameObject, MarkType, FieldControlManager> SetFieldInput;
@@ -41,6 +43,10 @@ public class FieldControlManager : MonoBehaviour
     private int _fieldSize;
     // MarkField size
     private float _markFieldSizeOnScreen;
+    // X center position
+    private float _xCenterPos;
+    // Y center position
+    private float _yCenterPos;
 
     // List for lines
     private List<GameObject> _linesList;
@@ -101,9 +107,8 @@ public class FieldControlManager : MonoBehaviour
     /// <summary>
     /// Sets up inputs for this field
     /// </summary>
-    /// <param name="firstInputObject">First input</param>
-    /// <param name="secondInputObject">Second input</param>
-    public void SetInputs(GameObject firstInputObject, GameObject secondInputObject, MarkType _firstObjectMark = MarkType.Cross, MarkType _secondObjectMark = MarkType.Circle)
+    public void SetInputs(GameObject firstInputObject, GameObject secondInputObject,
+        MarkType _firstObjectMark = MarkType.Cross, MarkType _secondObjectMark = MarkType.Circle)
     {
         // Check if objects are null referenced
         if (firstInputObject == null || secondInputObject == null)
@@ -138,7 +143,7 @@ public class FieldControlManager : MonoBehaviour
         SetFieldInput(_firstInputCheckGameObject, _firstObjectMark, this);
         SetFieldInput(_secondInputCheckGameObject, _secondObjectMark, this);
         // Invoke event
-        FieldIsMarked?.Invoke();
+        CellIsMarked?.Invoke();
     }
 
     /// <summary>
@@ -161,8 +166,10 @@ public class FieldControlManager : MonoBehaviour
         if (winRowQuant > fieldSize){winRowQuant = fieldSize; }
         _turnState = firstTurn;
         _winRowQuant = winRowQuant;
-        _markFieldSizeOnScreen = markFieldSizeOnScreen;
         _fieldSize = fieldSize;
+        _markFieldSizeOnScreen = markFieldSizeOnScreen;
+        _xCenterPos = xCenterPos;
+        _yCenterPos = yCenterPos;
         _isGameOverConditionReached = false;
         // Variables for line draw (will be used later in the function)
         float xLineStartPos = xCenterPos;
@@ -230,7 +237,15 @@ public class FieldControlManager : MonoBehaviour
             }
         }
         // Invoke event
-        FieldIsMarked?.Invoke();
+        CellIsMarked?.Invoke();
+    }
+
+    /// <summary>
+    /// Recreates field with the same data
+    /// </summary>
+    public void RecreateField(SpawnManager spawnManager, MarkType firstTurn)
+    {
+        CreateField(spawnManager, firstTurn, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, _xCenterPos, _yCenterPos);
     }
 
     /// <summary>
@@ -397,7 +412,6 @@ public class FieldControlManager : MonoBehaviour
     /// Marks cell refered to the gameobject, with corresponding mark type
     /// </summary>
     /// <param name="markCell">Which cell to mark</param>
-    /// <param name="inputObject">Who asked to mark the cell</param>
     public void MarkCellInField(GameObject markCell)
     {
         // Check, if win condition is reached
@@ -437,22 +451,25 @@ public class FieldControlManager : MonoBehaviour
                             Debug.Log(TurnState.ToString() + " has won!");
                             // Ask to mark win row
                             CheckPointForGameOverCondition(i, j, TurnState, ref maxQuantityOfMarks, true);
+                            // Invoke game over event
+                            GameOverIsReached?.Invoke();
                         }
                         // Check for draw
                         else if (CheckFieldForDrawCondition() == true)
                         {
                             Debug.Log("Draw!");
+                            // Invoke game over method
+                            GameOverIsReached?.Invoke();
                         }
                         // Else change turn
                         else
                         {
                             // Changing next turn mark
-                            if (_turnState == MarkType.Cross) { _turnState = MarkType.Circle; }
-                            else { _turnState = MarkType.Cross; }
+                            TurnChange();
                         }
                         Debug.Log(TurnState.ToString() + " in a row: " + maxQuantityOfMarks);
                         // Calling event
-                        FieldIsMarked?.Invoke();
+                        CellIsMarked?.Invoke();
                         return;
                     }
                     catch (Exception error)
@@ -462,6 +479,15 @@ public class FieldControlManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Changes turn
+    /// </summary>
+    private void TurnChange()
+    {
+        if (_turnState == MarkType.Cross) { _turnState = MarkType.Circle; }
+        else { _turnState = MarkType.Cross; }
     }
 
     #endregion

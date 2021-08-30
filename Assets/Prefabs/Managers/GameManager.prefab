@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 3635776999920553828}
   - component: {fileID: 3635776999920553831}
   - component: {fileID: 3635776999920553829}
+  - component: {fileID: 1534654502}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -44,33 +45,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a3fe3a0fc160634b915f58aa5836163, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _mainMenuInterface: {fileID: 0}
-  _gameEditInterface: {fileID: 0}
-  _gameEditInterfaceMarkChoice:
-  - {fileID: 0}
-  - {fileID: 0}
-  _gameEditInterfaceGameModeChoice:
-  - {fileID: 0}
-  - {fileID: 0}
-  _gameEditInterfaceFieldSizeSlider: {fileID: 0}
-  _gameEditInterfaceFieldSizeText: {fileID: 0}
-  _gameEditInterfaceWinRowQuantSlider: {fileID: 0}
-  _gameEditInterfaceWinRowQuantText: {fileID: 0}
-  _gameAreaInterface: {fileID: 0}
-  _gameAreaRecentTurn:
-  - {fileID: 0}
-  - {fileID: 0}
-  _gameAreaCrossPlayer:
-  - {fileID: 0}
-  - {fileID: 0}
-  _gameAreaCrossPlayerWinCounterText: {fileID: 0}
-  _gameAreaCirclePlayer:
-  - {fileID: 0}
-  - {fileID: 0}
-  _gameAreaCirclePlayerWinCounterText: {fileID: 0}
-  _gameAreaDrawCounterText: {fileID: 0}
-  _nextRoundButton: {fileID: 0}
-  _fieldControl: {fileID: 7276220160024155433, guid: c0cc5a07d597f3b4daca2fe3ae177cf2, type: 3}
+  _spawnManagerScript: {fileID: 3635776999920553829}
+  _fieldControlScript: {fileID: 1534654502}
   _inputUser: {fileID: 3952677897574468031, guid: 117ae658871cb8240b701823b388065c, type: 3}
   _inputAI: {fileID: 7571240700054928870, guid: e1059e448eef8a942a8028a6b1103f5d, type: 3}
 --- !u!114 &3635776999920553829
@@ -85,3 +61,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 213a38f318f7428488f492aa7c504d19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1534654502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3635776999920553830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 308b7141dbf3b244393e42514ff91117, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _markCell: {fileID: 5023505030437753563, guid: 11c4f3f61d242a94f9debfd1065169ef, type: 3}
+  _buildLine: {fileID: 2202472982917832020, guid: 892d492064ad47a4888c2d527de4b8af, type: 3}

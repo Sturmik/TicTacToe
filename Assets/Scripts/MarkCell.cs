@@ -76,7 +76,10 @@ public class MarkCell : MonoBehaviour
     /// </summary>
     private void StateCheck()
     {
-        _markCellAnimator.SetInteger(ANIMATION_STATE_VARIABLE, (int)_markType);
+        if (_markCellAnimator != null)
+        {
+            _markCellAnimator.SetInteger(ANIMATION_STATE_VARIABLE, (int)_markType);
+        }
     }
 
     /// <summary>

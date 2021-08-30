@@ -34,7 +34,7 @@ public class InputAI : InputBase
     protected override void OnDisable()
     {
         // Unsubscribe
-        _fieldControl.FieldIsMarked -= CheckTurn;
+        _fieldControl.CellIsMarked -= CheckTurn;
         _userMarkType = MarkType.Empty;
         // Call base on disable
         base.OnDisable();
@@ -50,8 +50,8 @@ public class InputAI : InputBase
         if (obj != gameObject) return;
         base.SetInputToField(obj, inputMarkType, fieldControl);
         // First unsubscribe(just in case) and then subscribe to the event
-        _fieldControl.FieldIsMarked -= CheckTurn;
-        _fieldControl.FieldIsMarked += CheckTurn;
+        _fieldControl.CellIsMarked -= CheckTurn;
+        _fieldControl.CellIsMarked += CheckTurn;
     }
 
     // Checks, if it is turn of AI
