@@ -21,15 +21,18 @@ public class InterfaceControl : MonoBehaviour
     private float DEMO_FIELD_X_CENTER_OFFSET = 7;
     private float DEMO_FIELD_Y_CENTER_OFFSET = -1;
 
-    // Variables for field default parameters
-    private GameManager.PlayerMark FIRST_TURN_MARK;
-
-    [Header("Player sprites prefabs")]
+    [Header("Sprites prefabs")]
     // Player sprite image
     [SerializeField] private Sprite _playerSpriteImage;
     // AI sprite image
     [SerializeField] private Sprite _AISpriteImage;
-
+    // Cross sprite image
+    [SerializeField] private Sprite _crossSpriteImage;
+    // Circle sprite image
+    [SerializeField] private Sprite _circleSpriteImage;
+    // Empty sprite image
+    [SerializeField] private Sprite _emptySpriteImage;
+ 
     [Header("Interface prefabs")]
     // Main menu interface
     [SerializeField] private GameObject _mainMenuInterface;
@@ -56,10 +59,15 @@ public class InterfaceControl : MonoBehaviour
     [SerializeField] private Text _gameAreaDrawCounterText;
     // Button for next round start
     [SerializeField] private GameObject _nextRoundButton;
+    // Cursor turn 
+    // There must be two interface elements. First is cross turn, second is circle turn
+    [SerializeField] private Image _gameAreaCursor3D;
 
     [Header("Game manager")]
     // Game manager script
     [SerializeField] private GameManager _gameManagerScript;
+    // Field dimension type
+    FieldControlManager.DimensionType _dimensionType;
     // Players mark
     private GameManager.PlayerMark _firstPlayerMark;
     private GameManager.PlayerMark _secondPlayerMark;
@@ -77,12 +85,19 @@ public class InterfaceControl : MonoBehaviour
     void Start()
     {
         // Set default variables
+        SetDimensionType();
         SetPlayerMarkType();
         SetGameMode();
         // First we activate main menu and disable all others
         BackToMainMenu();
         // Spawn demo field
         MainMenuDemoField();
+    }
+
+    void Update()
+    {
+        // Check game area hot keys
+        GameAreaGetKey();
     }
 
     #endregion
@@ -117,7 +132,7 @@ public class InterfaceControl : MonoBehaviour
         _gameManagerScript.SetInput(GameManager.InputType.AI, GameManager.PlayerMark.CrossMark,
             GameManager.InputType.AI, GameManager.PlayerMark.CircleMark);
         // Start game
-        _gameManagerScript.StartGame(GameManager.PlayerMark.CrossMark, fieldSize, fieldSize,
+        _gameManagerScript.StartGame(GameManager.PlayerMark.CrossMark, FieldControlManager.DimensionType.Dimension2D, fieldSize, fieldSize,
             DEMO_FIELD_MARK_SIZE_ON_SCREEN, DEMO_FIELD_X_CENTER_OFFSET, DEMO_FIELD_Y_CENTER_OFFSET);
     }
 
@@ -142,6 +157,14 @@ public class InterfaceControl : MonoBehaviour
     #endregion
 
     #region GameMode
+
+    /// <summary>
+    /// Sets dimension type
+    /// </summary>
+    public void SetDimensionType(int dimensionType = 0)
+    {
+        _dimensionType = (FieldControlManager.DimensionType)dimensionType;
+    }
 
     // Sets player mark type
     public void SetPlayerMarkType(int markType = 0)
@@ -215,6 +238,8 @@ public class InterfaceControl : MonoBehaviour
     // Start game button
     public void StartGameButton()
     {
+        // Hide cursor
+        _gameAreaCursor3D.sprite = _emptySpriteImage;
         // Disable edit interface
         _gameEditInterface.SetActive(false);
         // Show game area screen
@@ -228,8 +253,8 @@ public class InterfaceControl : MonoBehaviour
         _gameManagerScript.SetInput(_firstPlayerInputType, _firstPlayerMark,
                     _secondPlayerInputType, _secondPlayerMark);
         // Create field
-        _gameManagerScript.StartGame(GameManager.PlayerMark.CrossMark, (int)_gameEditInterfaceWinRowQuantSlider.value,
-            (int)_gameEditInterfaceFieldSizeSlider.value);        
+        _gameManagerScript.StartGame(GameManager.PlayerMark.CrossMark,  _dimensionType,
+            (int)_gameEditInterfaceWinRowQuantSlider.value, (int)_gameEditInterfaceFieldSizeSlider.value);
         // Hide button
         _nextRoundButton.SetActive(false);
     }
@@ -237,6 +262,28 @@ public class InterfaceControl : MonoBehaviour
     #endregion
 
     #region GameArea
+
+    // Checks input of 
+    private void GameAreaGetKey()
+    {
+        // If game area interface is active
+        if (_gameAreaInterface.activeSelf == true)
+        {
+            // Back to main menu
+            if (Input.GetKeyDown(KeyCode.B) || Input.GetKeyDown(KeyCode.Escape))
+            {
+                BackToMainMenu();
+            }
+            // Next round
+            else if (Input.GetKeyDown(KeyCode.N) || Input.GetMouseButtonDown(0) == true)
+            {
+                if (_nextRoundButton.activeSelf == true)
+                {
+                    NextRoundButton();
+                }
+            }
+        }
+    }
 
     // Updates counters
     public void UpdateCounters()
@@ -258,11 +305,21 @@ public class InterfaceControl : MonoBehaviour
             case GameManager.PlayerMark.CrossMark:
                 _gameAreaRecentTurn[0].SetActive(true);
                 _gameAreaRecentTurn[1].SetActive(false);
-                break;
+                // Check if we work in 3D environment
+                if (_dimensionType == FieldControlManager.DimensionType.Dimension3D)
+                {
+                    _gameAreaCursor3D.sprite = _crossSpriteImage;
+                }
+                    break;
             // Circle win
             case GameManager.PlayerMark.CircleMark:
                 _gameAreaRecentTurn[0].SetActive(false);
                 _gameAreaRecentTurn[1].SetActive(true);
+                // Check if we work in 3D environment
+                if (_dimensionType == FieldControlManager.DimensionType.Dimension3D)
+                {
+                    _gameAreaCursor3D.sprite = _circleSpriteImage;
+                }
                 break;
         }
     }

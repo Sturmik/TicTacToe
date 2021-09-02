@@ -5,8 +5,17 @@ using UnityEngine;
 // Class for field building and full control over it
 public class FieldControlManager : MonoBehaviour
 {
+    // Dimension type
+    public enum DimensionType
+    {
+        Dimension2D,
+        Dimension3D
+    }
+
     #region Events
 
+    // Event, which signals that field was created
+    public event Action<DimensionType> FieldIsCreated;
     // Event, which signals that field was marked
     public event Action CellIsMarked;
     // Event, which signals that game is over
@@ -27,12 +36,25 @@ public class FieldControlManager : MonoBehaviour
 
     #region Variables
 
-    [Header("Field default build blocks")]
-    // Mark field prefab
-    [SerializeField] private GameObject _markCell;
-    // Building lines, which will form the field
-    [SerializeField] private GameObject _buildLine;
+    [Header("Field build blocks")]
+    // Mark cell and build line 2D
+    [SerializeField] private GameObject _markCell2D;
+    [SerializeField] private GameObject _buildLine2D;
+    // Mark cell and build line 3D
+    [SerializeField] private GameObject _markCell3D;
+    [SerializeField] private GameObject _buildLine3D;
 
+    // Mark field prefab
+    private GameObject _markCell;
+    // Building lines, which will form the field
+    private GameObject _buildLine;
+
+    // Dimension type of the field
+    private DimensionType _fieldDimensionType;
+    /// <summary>
+    /// Dimension type of the field
+    /// </summary>
+    public DimensionType FieldDimensionType { get { return _fieldDimensionType; } }
     // Win row quantity
     private int _winRowQuant;
     /// <summary>
@@ -155,8 +177,8 @@ public class FieldControlManager : MonoBehaviour
     /// <param name="markFieldSizeOnScreen"></param>
     /// <param name="xCenterPos"></param>
     /// <param name="yCenterPos"></param>
-    public void CreateField(SpawnManager spawnManager, MarkType firstTurn = MarkType.Cross, int winRowQuant = 3, int fieldSize = 3,
-        float markFieldSizeOnScreen = 2, float xCenterPos = 0, float yCenterPos = 0)
+    public void CreateField(SpawnManager spawnManager, MarkType firstTurn = MarkType.Cross, DimensionType dimensionType = DimensionType.Dimension2D,
+        int winRowQuant = 3, int fieldSize = 3, float markFieldSizeOnScreen = 2, float xCenterPos = 0, float yCenterPos = 0, float zCenterPos = 0)
     {
         // Disable field before creating new one
         DisableField();
@@ -171,6 +193,29 @@ public class FieldControlManager : MonoBehaviour
         _xCenterPos = xCenterPos;
         _yCenterPos = yCenterPos;
         _isGameOverConditionReached = false;
+        _fieldDimensionType = dimensionType;
+        // Spawn manager pool types for further usage
+        SpawnManager.PoolType linePoolType;
+        SpawnManager.PoolType markCellPoolType;
+        // Setting dimension type
+        switch(_fieldDimensionType)
+        {
+            default:
+                // 2D
+                case DimensionType.Dimension2D:
+                _buildLine = _buildLine2D;
+                linePoolType = SpawnManager.PoolType.BuildLine2D;
+                _markCell = _markCell2D;
+                markCellPoolType = SpawnManager.PoolType.MarkCell2D;
+                break;
+            // 3D
+            case DimensionType.Dimension3D:
+                _buildLine = _buildLine3D;
+                linePoolType = SpawnManager.PoolType.BuildLine3D;
+                _markCell = _markCell3D;
+                markCellPoolType = SpawnManager.PoolType.MarkCell3D;
+                break;
+        }
         // Variables for line draw (will be used later in the function)
         float xLineStartPos = xCenterPos;
         float yLineStartPos = yCenterPos;
@@ -204,17 +249,19 @@ public class FieldControlManager : MonoBehaviour
         for (int lineIt = 0; lineIt < _fieldSize - 1; lineIt++)
         {
             // Spawn line
-            GameObject spawnedXLine = spawnManager.SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
-            GameObject spawnedYline = spawnManager.SpawnObject(SpawnManager.PoolType.BuildLine, _buildLine);
+            GameObject spawnedXLine = spawnManager.SpawnObject(linePoolType, _buildLine);
+            GameObject spawnedYLine = spawnManager.SpawnObject(linePoolType, _buildLine);
             // Scale object
-            spawnedXLine.transform.localScale = new Vector3(adaptFieldSize / 4 / 8, adaptFieldSize * _fieldSize);
-            spawnedYline.transform.localScale = new Vector3(spawnedXLine.transform.localScale.y, spawnedXLine.transform.localScale.x);
+            spawnedXLine.transform.localScale
+                = new Vector3(adaptFieldSize / 4 / 8, adaptFieldSize * _fieldSize);
+            spawnedYLine.transform.localScale 
+                = new Vector3(spawnedXLine.transform.localScale.y, spawnedXLine.transform.localScale.x);
             // Setting position of the line
-            spawnedXLine.transform.position = new Vector3(xLineStartPos + (lineIt * adaptFieldSize), yCenterPos);
-            spawnedYline.transform.position = new Vector3(xCenterPos, yLineStartPos - (lineIt * adaptFieldSize));
+            spawnedXLine.transform.position = new Vector3(xLineStartPos + (lineIt * adaptFieldSize), yCenterPos, zCenterPos);
+            spawnedYLine.transform.position = new Vector3(xCenterPos, yLineStartPos - (lineIt * adaptFieldSize), zCenterPos);
             // Add lines to the list
             _linesList.Add(spawnedXLine);
-            _linesList.Add(spawnedYline);
+            _linesList.Add(spawnedYLine);
         }
         // Create field, depending on the entered size
         for (int y = 0; y < _fieldSize; y++)
@@ -225,19 +272,22 @@ public class FieldControlManager : MonoBehaviour
             for (int x = 0; x < _fieldSize; x++)
             {
                 // Spawn mark cell
-                GameObject spawnedMarkCell = spawnManager.SpawnObject(SpawnManager.PoolType.MarkCell, _markCell);
+                GameObject spawnedMarkCell = spawnManager.SpawnObject(markCellPoolType, _markCell);
                 // Rescale object
-                spawnedMarkCell.transform.localScale = new Vector3(adaptFieldSize, adaptFieldSize);
+                spawnedMarkCell.transform.localScale 
+                    = new Vector3(adaptFieldSize, adaptFieldSize, spawnedMarkCell.transform.localScale.z);
                 // Set it on new position
-                spawnedMarkCell.transform.position = new Vector2(xStartPos + x * spawnedMarkCell.transform.localScale.x, yStartPos - y * spawnedMarkCell.transform.localScale.y);
+                spawnedMarkCell.transform.position 
+                    = new Vector3(xStartPos + x * spawnedMarkCell.transform.localScale.x, yStartPos - y * spawnedMarkCell.transform.localScale.y, zCenterPos);
                 // Add cell to list
                 _gameObjectsMarksCells2DList[y].Add(spawnedMarkCell);
                 // Add mark state
                 _marksTypes2DList[y].Add(MarkType.Empty);
             }
         }
-        // Invoke event
+        // Invoke events
         CellIsMarked?.Invoke();
+        FieldIsCreated?.Invoke(_fieldDimensionType);
     }
 
     /// <summary>
@@ -245,7 +295,7 @@ public class FieldControlManager : MonoBehaviour
     /// </summary>
     public void RecreateField(SpawnManager spawnManager, MarkType firstTurn)
     {
-        CreateField(spawnManager, firstTurn, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, _xCenterPos, _yCenterPos);
+        CreateField(spawnManager, firstTurn, _fieldDimensionType, _winRowQuant, _fieldSize, _markFieldSizeOnScreen, _xCenterPos, _yCenterPos);
     }
 
     /// <summary>

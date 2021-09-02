@@ -31,6 +31,13 @@ public class InputAI : InputBase
 
     #region Unity
 
+    protected void Awake()
+    {
+        // Initialize variable
+        _priorityList = new PriorityList();
+        _priorityList.markCellList = new List<GameObject>();
+    }
+
     protected override void OnDisable()
     {
         // Unsubscribe
@@ -74,9 +81,8 @@ public class InputAI : InputBase
         // Variable for comparing priority level
         int tempPriorityLevel = 0;
         // Reinitialize variables
-        _priorityList = new PriorityList();
+        _priorityList.markCellList.Clear();
         _priorityList.priorityLevel = tempPriorityLevel;
-        _priorityList.markCellList = new List<GameObject>();
         // We go through each cell and analyze it
         for (int i = 0; i < _fieldControl.MarksTypes2DList.Count; i++)
         {

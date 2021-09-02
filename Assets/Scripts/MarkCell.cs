@@ -49,13 +49,12 @@ public class MarkCell : MonoBehaviour
         _markType = MarkType.Empty;
         // Update state
         StateCheck();
-        // Unsubscribe to events
+        // Unsubscribe and subscribe to events
         FieldControlManager.GetCellMarkType -= GetMarkType;
-        FieldControlManager.SetCellMarkType -= SetMarkType;
-        FieldControlManager.SetCellAsWinning -= SetWinningState;
-        // Subscribe to events
         FieldControlManager.GetCellMarkType += GetMarkType;
+        FieldControlManager.SetCellMarkType -= SetMarkType;
         FieldControlManager.SetCellMarkType += SetMarkType;
+        FieldControlManager.SetCellAsWinning -= SetWinningState;
         FieldControlManager.SetCellAsWinning += SetWinningState;
     }
 

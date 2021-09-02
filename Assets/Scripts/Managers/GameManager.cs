@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
 /// Global variables
@@ -144,7 +143,7 @@ public class GameManager : MonoBehaviour
     }
 
     // Starts game
-    public void StartGame(PlayerMark firstTurn = PlayerMark.CrossMark, int winRowQuant = 3, int fieldSize = 3,
+    public void StartGame(PlayerMark firstTurn = PlayerMark.CrossMark, FieldControlManager.DimensionType dimensionType = FieldControlManager.DimensionType.Dimension2D, int winRowQuant = 3, int fieldSize = 3,
         float markFieldSizeOnScreen = 2, float xCenterPos = 0, float yCenterPos = 0)
     {
         // Detach previous inputs
@@ -159,8 +158,8 @@ public class GameManager : MonoBehaviour
         // Update counters
         ResetCounters();
         // Create field
-        _fieldControlScript.CreateField(_spawnManagerScript, ConvertPlayerMarkToMarkType(firstTurn), winRowQuant,
-            fieldSize, markFieldSizeOnScreen, xCenterPos, yCenterPos);
+        _fieldControlScript.CreateField(_spawnManagerScript, ConvertPlayerMarkToMarkType(firstTurn), dimensionType,
+            winRowQuant, fieldSize, markFieldSizeOnScreen, xCenterPos, yCenterPos);
     }
 
     /// <summary>

@@ -6,8 +6,10 @@ public class SpawnManager : MonoBehaviour
     // Pool types
     public enum PoolType
     {
-       MarkCell,
-       BuildLine,
+       MarkCell2D,
+       MarkCell3D,
+       BuildLine2D,
+       BuildLine3D,
        InputUser,
        InputAI
     }
