@@ -275,7 +275,7 @@ public class InterfaceControl : MonoBehaviour
                 BackToMainMenu();
             }
             // Next round
-            else if (Input.GetKeyDown(KeyCode.N) || Input.GetMouseButtonDown(0) == true)
+            else if (Input.GetKeyDown(KeyCode.N) || Input.GetMouseButtonDown(1) == true)
             {
                 if (_nextRoundButton.activeSelf == true)
                 {
